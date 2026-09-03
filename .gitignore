@@ -1,0 +1,17 @@
+node_modules
+dist/
+scratch/
+
+# Live run scratch file — rewritten constantly by every run, and a
+# leftover copy makes the viewer read "stalled". Recorded sessions and
+# traces/pinned.json ARE committed: they are the offline stage fallback.
+traces/live.json
+traces/*.tmp
+
+.env
+.env.local
+*.log
+.DS_Store
+
+# Internal working plan / dev log - kept local, not published.
+PLAN.md

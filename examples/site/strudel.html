@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Cadence · Strudel stage</title>
+<style>
+  body { margin: 0; background: #0d0d0d; color: #eee; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+  header { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 22px; border-bottom: 1px solid #2c2c2a; }
+  h1 { font-size: 16px; margin: 0; color: #86b6ef; }
+  #status { font-size: 13px; color: #898781; }
+  #program { margin: 0; padding: 22px; font-size: 17px; line-height: 1.7; white-space: pre-wrap; color: #e8e6da; }
+  .playing { color: #1baf7a; }
+  .silent { color: #898781; }
+  .err { color: #e34948; }
+</style>
+</head>
+<body>
+<header>
+  <h1>cadence → strudel</h1>
+  <span id="status">booting…</span>
+</header>
+<pre id="program">// nothing playing yet</pre>
+
+<script src="vendor/strudel-web.js"></script>
+<script>
+  const statusEl = document.getElementById("status");
+  const programEl = document.getElementById("program");
+
+  const state = {
+    ready: false,
+    samplesLoaded: false,
+    playing: false,
+    currentCode: "",
+    lastError: null,
+  };
+
+  function renderStatus() {
+    const play = state.playing
+      ? '<span class="playing">▶ playing</span>'
+      : '<span class="silent">■ silent</span>';
+    const smp = state.samplesLoaded ? "drum samples ✓" : "drum samples unavailable (synths only)";
+    const err = state.lastError ? ` · <span class="err">${state.lastError}</span>` : "";
+    statusEl.innerHTML = `${play} · ${smp}${err}`;
+  }
+
+  // Strudel's evaluate() SWALLOWS most errors — it logs them through a
+  // document CustomEvent ("strudel.log") instead of throwing. Capture that
+  // channel so apply() can report rejection to the agent.
+  let applyErrors = [];
+  document.addEventListener("strudel.log", (e) => {
+    const d = (e && e.detail) || {};
+    const msg = String(d.message || "");
+    const isError = String(d.type || "").toLowerCase().includes("error") || /error/i.test(msg);
+    if (isError) {
+      applyErrors.push(msg);
+      state.lastError = msg;
+      renderStatus();
+    }
+  });
+
+  window.cadence = {
+    state,
+    async apply(code) {
+      applyErrors = [];
+      try {
+        await strudel.evaluate(code);
+        // Transpile/eval errors surface on the log channel, not as throws —
+        // give them a beat to arrive.
+        await new Promise((r) => setTimeout(r, 150));
+        if (applyErrors.length > 0) {
+          return { ok: false, error: applyErrors.join("; ") };
+        }
+        state.playing = true;
+        state.currentCode = code;
+        state.lastError = null;
+        programEl.textContent = code;
+        renderStatus();
+        return { ok: true };
+      } catch (e) {
+        state.lastError = String((e && e.message) || e);
+        renderStatus();
+        return { ok: false, error: state.lastError };
+      }
+    },
+    stop() {
+      try { strudel.hush(); } catch (e) { /* not started yet */ }
+      state.playing = false;
+      programEl.textContent = "// silence";
+      renderStatus();
+      return { ok: true };
+    },
+    status() {
+      return {
+        ready: state.ready,
+        samplesLoaded: state.samplesLoaded,
+        playing: state.playing,
+        currentCode: state.currentCode,
+        lastError: state.lastError,
+      };
+    },
+  };
+
+  (async () => {
+    try {
+      strudel.initStrudel();
+      state.ready = true;
+      statusEl.textContent = "engine ready · loading drum samples…";
+      // Drum samples need the network (github-hosted sample map). Synths
+      // (sawtooth/square/triangle/sine via note()) work fully offline, so a
+      // failure here degrades the palette, not the demo. Retry once — the
+      // first attempt can race engine init.
+      for (let attempt = 0; attempt < 3 && !state.samplesLoaded; attempt++) {
+        try {
+          await strudel.samples("github:tidalcycles/dirt-samples");
+          state.samplesLoaded = true;
+        } catch (e) {
+          await new Promise((r) => setTimeout(r, 1200));
+        }
+      }
+      renderStatus();
+    } catch (e) {
+      statusEl.innerHTML = '<span class="err">init failed: ' + String((e && e.message) || e) + "</span>";
+    }
+  })();
+</script>
+</body>
+</html>

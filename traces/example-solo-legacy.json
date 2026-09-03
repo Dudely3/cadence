@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "writtenAt": 1786970000000,
+  "session": {
+    "id": "example-solo-legacy",
+    "mode": "solo-style · json-in-text",
+    "startedMs": 1786969800000,
+    "goal": {
+      "id": "helprise-refund",
+      "description": "Verify order #18274 on case HR-20931 in the HelpRise CRM and issue a refund for the damaged tent stakes, then log a case note. (In Solo this is the 'Prompt' config param, with brain-key values interpolated in.)"
+    },
+    "system": "You are an autonomous browser automation agent operating a CRM on behalf of a support agent.\n\nYou MUST respond with a single valid JSON object and NOTHING else — no prose, no markdown fences. The required format is:\n{\"current_state\": {\"page_summary\": \"...\", \"evaluation\": \"...\", \"next_goal\": \"...\"}, \"reasoning\": \"...\", \"action\": [\"toolName(args)\", ...]}\n\nAvailable tools (call by writing the string into the action array):\n- goToUrl(url)\n- clickElement(index)\n- setText(index, text)\n- scrollPage(direction)\n- fetchSecret(name)\n- markStep(id, status)\n- finishRun(status)\n- abandonRun(reason)\n\nRules: act on element indexes from the HTML elements list in this message. Never invent indexes. Keep reasoning short. Remember: output ONLY the JSON object — invalid JSON will abort the turn.\n\n(NOTE FOR THE AUDIENCE: this tool list is PROSE. The API's tools parameter is never sent — the model cannot be schema-validated, and nothing stops it from calling a tool that doesn't exist. scrollPage(direction) here is exactly how the real scroll_element incident happened.)",
+    "tools": [],
+    "turns": [
+      {
+        "index": 0,
+        "closed": true,
+        "cacheable": true,
+        "actions": [],
+        "assistantBlocks": [
+          {
+            "type": "text",
+            "text": "[[JSON response · the model's ENTIRE output is one text blob]]\n{\"current_state\": {\"page_summary\": \"Blank tab, no page loaded\", \"evaluation\": \"Nothing attempted yet\", \"next_goal\": \"Open case HR-20931 in HelpRise\"}, \"reasoning\": \"I need to open case HR-20931. The HelpRise case URL pattern is https://helprise.example/cases/{id}, so I will navigate there directly.\", \"action\": [\"goToUrl(\\\"https://helprise.example/cases/HR-20931\\\")\"]}"
+          }
+        ],
+        "toolResults": [
+          {
+            "type": "tool_result",
+            "toolUseId": "solo_t1_hist",
+            "content": "[[Turn 1 history entry · harness PARAPHRASE, frozen into every later request]]\nTurn 1:\n  goal: Open case HR-20931 in HelpRise\n  reasoning: I need to open case HR-20931. The HelpRise case URL pattern is https://helprise.example/cases/{id}, so I will...\n  actions: [\"goToUrl(https://helprise.example/cases/HR-20931)\"]\n  toolResults: [{\"success\": true}]\n\n(Audience note: this block was WRITTEN BY THE HARNESS, not the model. Compare with the response above — page_summary and evaluation were dropped, the reasoning was truncated, and the action string lost its quoting. The model never sees its own bytes again; it sees this transcription.)"
+          }
+        ],
+        "tail": "[[volatile section · re-rendered from the state bag EVERY request]]\nCurrent URL: about:blank\n\nOther Tabs:\n(none)\n\nHTML elements:\n(none — no page loaded)\n\nCurrent Goal: Verify order #18274 on case HR-20931 and issue a refund for the damaged tent stakes, then log a case note.",
+        "usage": {
+          "model": "solo speed-processor (json-in-text)",
+          "inputTokens": 2870,
+          "outputTokens": 214,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 2400
+        },
+        "timing": { "startedMs": 1786969800000, "durationMs": 2400 }
+      },
+      {
+        "index": 1,
+        "closed": true,
+        "cacheable": true,
+        "actions": [],
+        "assistantBlocks": [
+          {
+            "type": "text",
+            "text": "[[JSON response · reasoning trapped inside a JSON string]]\n{\"current_state\": {\"page_summary\": \"HelpRise case HR-20931: order #18274, item Titanium Tent Stakes $11.50, customer reports damage\", \"evaluation\": \"Navigation succeeded\", \"next_goal\": \"Issue the refund\"}, \"reasoning\": \"The case shows the customer wrote \\\"stakes arrived bent\\\" and support policy 4.2 covers damaged-item refunds, so I will enter 11.50 in the refund amount field and click \\\"Issue refund\\\". Note how every quotation mark in this sentence must be escaped or the whole turn aborts \\u2014 this is the PromptFlow unescaped-quote incident waiting to happen.\", \"action\": [\"setText(15, \\\"11.50\\\")\", \"clickElement(14)\"]}"
+          }
+        ],
+        "toolResults": [
+          {
+            "type": "tool_result",
+            "toolUseId": "solo_t2_hist",
+            "content": "[[Turn 2 history entry · harness paraphrase]]\nTurn 2:\n  goal: Issue the refund\n  reasoning: The case shows the customer wrote \"stakes arrived bent\" and support policy 4.2 covers damaged-item refunds, so I will...\n  actions: [\"setText(15, 11.50)\", \"clickElement(14)\"]\n  toolResults: [{\"success\": true}, {\"success\": true, \"note\": \"Refund dialog confirmed\"}]"
+          }
+        ],
+        "tail": "[[volatile section · re-rendered from the state bag EVERY request]]\nCurrent URL: https://helprise.example/cases/HR-20931\n\nOther Tabs:\n(none)\n\nHTML elements:\n[0] <a> Dashboard\n[1] <a> Cases\n[2] <a> Reports\n[3] <span> Case HR-20931 — Refund request\n[4] <span> Customer: J. Fictional\n[5] <span> Order #18274 — Titanium Tent Stakes — $11.50\n[6] <span> Status: Open\n[7] <button> Assign to me\n[8] <button> Escalate\n[9] <a> Order details\n[10] <a> Customer history\n[11] <button> Add tag\n[12] <select> Resolution type\n[13] <span> Refund panel\n[14] <button> Issue refund\n[15] <input> Refund amount\n[16] <textarea> Case note\n[17] <button> Save note\n\nCurrent Goal: Verify order #18274 on case HR-20931 and issue a refund for the damaged tent stakes, then log a case note.",
+        "usage": {
+          "model": "solo speed-processor (json-in-text)",
+          "inputTokens": 3640,
+          "outputTokens": 262,
+          "cacheReadTokens": 2400,
+          "cacheWriteTokens": 620
+        },
+        "timing": { "startedMs": 1786969830000, "durationMs": 3100 }
+      },
+      {
+        "index": 2,
+        "closed": true,
+        "cacheable": true,
+        "actions": [],
+        "assistantBlocks": [
+          {
+            "type": "text",
+            "text": "[[JSON response · completion is also just a string in the action array]]\n{\"current_state\": {\"page_summary\": \"Refund of $11.50 issued on HR-20931; badge shows Refunded; note field empty\", \"evaluation\": \"Refund succeeded\", \"next_goal\": \"Log the case note and complete\"}, \"reasoning\": \"The refund badge confirms success. I will log the required case note and complete the objective.\", \"action\": [\"setText(16, \\\"Issued $11.50 refund for damaged tent stakes per policy 4.2.\\\")\", \"clickElement(17)\", \"finishRun(\\\"success\\\")\"]}"
+          }
+        ],
+        "toolResults": [
+          {
+            "type": "tool_result",
+            "toolUseId": "solo_t3_hist",
+            "content": "[[Turn 3 history entry · harness paraphrase]]\nTurn 3:\n  goal: Log the case note and complete\n  reasoning: The refund badge confirms success. I will log the required case note and complete the objective.\n  actions: [\"setText(16, Issued $11.50 refund for damaged tent stakes per policy 4.2.)\", \"clickElement(17)\", \"finishRun(success)\"]\n  toolResults: [{\"success\": true}, {\"success\": true}, {\"success\": true, \"brainKeyDone\": \"refund_complete\"}]"
+          }
+        ],
+        "tail": "[[volatile section · re-rendered from the state bag EVERY request]]\nCurrent URL: https://helprise.example/cases/HR-20931\n\nOther Tabs:\n(none)\n\nHTML elements:\n[0] <a> Dashboard\n[1] <a> Cases\n[2] <a> Reports\n[3] <span> Case HR-20931 — Refund request\n[4] <span> Customer: J. Fictional\n[5] <span> Order #18274 — Titanium Tent Stakes — $11.50\n[6] <span> Status: Refunded ✓\n[7] <button> Reopen\n[8] <button> Escalate\n[9] <a> Order details\n[10] <a> Customer history\n[11] <button> Add tag\n[12] <select> Resolution type\n[13] <span> Refund panel — $11.50 refunded\n[16] <textarea> Case note\n[17] <button> Save note\n\n(Audience note: indexes shifted — [14] and [15] vanished with the refund panel. Nothing validates that the model's next click still means what it meant last turn.)\n\nCurrent Goal: Verify order #18274 on case HR-20931 and issue a refund for the damaged tent stakes, then log a case note.",
+        "usage": {
+          "model": "solo speed-processor (json-in-text)",
+          "inputTokens": 3810,
+          "outputTokens": 297,
+          "cacheReadTokens": 2980,
+          "cacheWriteTokens": 540
+        },
+        "timing": { "startedMs": 1786969870000, "durationMs": 2900 }
+      }
+    ]
+  },
+  "result": {
+    "success": true,
+    "outcome": "completed",
+    "completionStatus": "success",
+    "steps": 3,
+    "finalObservation": {
+      "summary": "finishRun(\"success\") parsed from the action array; brain key refund_complete written."
+    },
+    "totals": {
+      "wallMs": 78400,
+      "llmCalls": 3,
+      "inputTokens": 10320,
+      "outputTokens": 773,
+      "cacheReadTokens": 5380
+    }
+  }
+}

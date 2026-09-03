@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Trailhead Supply Co.</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; background: #f6f5f2; color: #1a1a19; }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 14px 28px; background: #24421f; color: #fff; }
+  header h1 { font-size: 20px; margin: 0; }
+  #cart-count { font-size: 14px; background: #ffffff22; border-radius: 999px; padding: 4px 12px; }
+  main { max-width: 960px; margin: 0 auto; padding: 20px; }
+  h2 { font-size: 16px; border-bottom: 2px solid #24421f33; padding-bottom: 6px; margin-top: 28px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .product { background: #fff; border: 1px solid #e0ded8; border-radius: 8px; padding: 12px 14px; }
+  .product h3 { margin: 0 0 2px; font-size: 14px; }
+  .product p { margin: 0 0 8px; font-size: 12px; color: #666; }
+  .price { font-weight: 700; font-size: 14px; }
+  .row { display: flex; justify-content: space-between; align-items: center; }
+  button { background: #24421f; color: #fff; border: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
+  button:hover { background: #35592f; }
+  #cart { background: #fff; border: 1px solid #e0ded8; border-radius: 8px; padding: 14px; margin-top: 28px; }
+  #cart ul { margin: 6px 0; padding-left: 20px; font-size: 13px; }
+  #cart .total { font-weight: 700; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Trailhead Supply Co.</h1>
+  <span id="cart-count">Cart (0 items)</span>
+</header>
+<main>
+  <section id="catalog"></section>
+
+  <section id="cart" aria-label="Shopping cart">
+    <h2>Your cart</h2>
+    <ul id="cart-items"><li id="cart-empty">Cart is empty.</li></ul>
+    <div class="row">
+      <span class="total" id="cart-total">Total: $0.00</span>
+      <button id="clear-cart" aria-label="Clear cart">Clear cart</button>
+    </div>
+  </section>
+</main>
+
+<script>
+  // Deterministic catalog. Note: the cheapest item OVERALL is in Water
+  // ($9.95); the cheapest CAMPING item is the Titanium Tent Stakes ($11.50).
+  const PRODUCTS = [
+    { name: "Alpine Tent 2P",        cat: "Camping",  price: 189.00, blurb: "Freestanding two-person shelter, 1.9 kg." },
+    { name: "Down Sleeping Bag",     cat: "Camping",  price: 129.50, blurb: "800-fill, comfort to -7°C." },
+    { name: "Titanium Tent Stakes",  cat: "Camping",  price: 11.50,  blurb: "Set of 6, 8 g each." },
+    { name: "Camp Stove",            cat: "Camping",  price: 44.99,  blurb: "Canister stove, 3.5 min boil." },
+    { name: "Headlamp 400lm",        cat: "Camping",  price: 24.95,  blurb: "USB-C, red mode, IPX6." },
+    { name: "Dynamic Rope 60m",      cat: "Climbing", price: 159.00, blurb: "9.8 mm, dry treated." },
+    { name: "Climbing Harness",      cat: "Climbing", price: 64.50,  blurb: "Adjustable legs, 4 gear loops." },
+    { name: "Chalk Bag",             cat: "Climbing", price: 14.25,  blurb: "Fleece lined, belt included." },
+    { name: "Carabiner Set",         cat: "Climbing", price: 29.99,  blurb: "5 wiregate, 24 kN." },
+    { name: "Belay Device",          cat: "Climbing", price: 22.40,  blurb: "Tube style, guide mode." },
+    { name: "Dry Bag 20L",           cat: "Water",    price: 9.95,   blurb: "Roll-top, welded seams." },
+    { name: "Packraft",              cat: "Water",    price: 349.00, blurb: "2.3 kg, inflates in 4 min." },
+    { name: "Water Filter",          cat: "Water",    price: 34.75,  blurb: "Hollow fiber, 2 L/min." },
+    { name: "Kayak Paddle",          cat: "Water",    price: 89.00,  blurb: "Fiberglass, 2-piece." },
+    { name: "Neoprene Gloves",       cat: "Water",    price: 17.60,  blurb: "3 mm, pre-curved." },
+  ];
+
+  const cart = [];
+  const fmt = (n) => "$" + n.toFixed(2);
+
+  function renderCatalog() {
+    const cats = [...new Set(PRODUCTS.map((p) => p.cat))];
+    const root = document.getElementById("catalog");
+    for (const cat of cats) {
+      const h = document.createElement("h2");
+      h.textContent = cat;
+      root.appendChild(h);
+      const grid = document.createElement("div");
+      grid.className = "grid";
+      for (const p of PRODUCTS.filter((x) => x.cat === cat)) {
+        const card = document.createElement("div");
+        card.className = "product";
+        card.innerHTML =
+          "<h3>" + p.name + "</h3><p>" + p.blurb + "</p>" +
+          '<div class="row"><span class="price">' + fmt(p.price) + "</span></div>";
+        const btn = document.createElement("button");
+        btn.textContent = "Add to cart";
+        btn.setAttribute("aria-label", "Add " + p.name + " to cart");
+        btn.addEventListener("click", () => addToCart(p));
+        card.querySelector(".row").appendChild(btn);
+        grid.appendChild(card);
+      }
+      root.appendChild(grid);
+    }
+  }
+
+  function renderCart() {
+    const ul = document.getElementById("cart-items");
+    ul.innerHTML = "";
+    if (cart.length === 0) {
+      ul.innerHTML = '<li id="cart-empty">Cart is empty.</li>';
+    } else {
+      for (const p of cart) {
+        const li = document.createElement("li");
+        li.textContent = p.name + " — " + fmt(p.price);
+        ul.appendChild(li);
+      }
+    }
+    const total = cart.reduce((a, p) => a + p.price, 0);
+    document.getElementById("cart-total").textContent = "Total: " + fmt(total);
+    document.getElementById("cart-count").textContent =
+      "Cart (" + cart.length + " item" + (cart.length === 1 ? "" : "s") + ")";
+  }
+
+  function addToCart(p) { cart.push(p); renderCart(); }
+  document.getElementById("clear-cart").addEventListener("click", () => { cart.length = 0; renderCart(); });
+  renderCatalog();
+</script>
+</body>
+</html>

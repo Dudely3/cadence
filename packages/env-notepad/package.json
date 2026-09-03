@@ -1,0 +1,13 @@
+{
+  "name": "@cadence/env-notepad",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@cadence/core": "*",
+    "zod": "^3.24.1"
+  }
+}

@@ -1,0 +1,1350 @@
+{
+  "version": 1,
+  "session": {
+    "id": "sess_mtkru4uk_1",
+    "goal": {
+      "id": "pdc-find-talk",
+      "description": "You are on the page at www.prairiedevcon.com. Find the session about execution modes for agentic workflows and report its title and who is speaking.",
+      "successCriteria": "Find the session about execution modes for agentic workflows and report its title and who is speaking."
+    },
+    "mode": "speed",
+    "turns": [
+      {
+        "index": 0,
+        "actions": [
+          {
+            "id": "toolu_01YVyRuBv9hdFjPvaogRCaMX",
+            "tool": "find_in_page",
+            "args": {
+              "text": "execution modes agentic workflows"
+            },
+            "result": {
+              "ok": true,
+              "observation": {
+                "summary": "No match for \"execution modes agentic workflows\" on this page. It may be on another page, or behind a link."
+              }
+            }
+          }
+        ],
+        "assistantBlocks": [
+          {
+            "type": "text",
+            "text": "I'll help you find the session about execution modes for agentic workflows. Let me search the page for this information."
+          },
+          {
+            "type": "tool_use",
+            "id": "toolu_01YVyRuBv9hdFjPvaogRCaMX",
+            "name": "find_in_page",
+            "input": {
+              "text": "execution modes agentic workflows"
+            }
+          }
+        ],
+        "toolResults": [
+          {
+            "type": "tool_result",
+            "toolUseId": "toolu_01YVyRuBv9hdFjPvaogRCaMX",
+            "content": "No match for \"execution modes agentic workflows\" on this page. It may be on another page, or behind a link.",
+            "isError": false
+          }
+        ],
+        "closed": true,
+        "cacheable": true,
+        "timing": {
+          "startedMs": 1788394381933,
+          "durationMs": 2000
+        },
+        "tail": "CURRENT STATE (fresh this turn — supersedes any state mentioned earlier):\nURL: https://www.prairiedevcon.com/\nTitle: Prairie Dev Con Winnipeg - September 21-22 2026\n\n--- page text (first 6000 of 79802 chars — use find_in_page to search the rest) ---\nAbout\n\nSpeakers\n\nSessions\n\nSponsors\n\nTickets\n\nVenue\n\nFAQ\n\nCode of Conduct\n\nSept 21 & 22 2026\nWinnipeg, MB\n\n2\n\nDays\n\n70+\n\nSessions\n\n50+\n\nSpeakers\n\n### The Largest AI & Software Development Conference on the Prairies!\nJoin us this September for the biggest Prairie Dev Con yet! We're expanding to six rooms of sessions over the two days and featuring over 40 world-class speakers delivering more than 70 sessions on all things software development and AI. Whether you're a developer, manager, or just passionate about tech, there's something for everyone at PrDC 2026!\n\nDon't miss out on this opportunity to learn, connect, and grow with the Prairie Dev Con community!\n\n#### Event Starts In:\n\nJoin Our Mailing List!\n\nEmail Us A Question!\n\n### Keynote\n#### Craig Shyjak, VP of Architecture, Laivly\nCraig Shyjak is a technology executive and architecture leader focused on the future of software development. With 20+ years of experience and a strong entrepreneurial drive, he has built and led teams delivering scalable platforms across cloud, data, and AI ecosystems.\n\nHis recent work explores the rise of agentic AI and its implications for how software is built and consumed. From augmenting developers with AI-driven workflows to designing systems where agents act on behalf of users, Craig focuses on what this shift means for architecture, team structures, and the role of engineers.\n\nHe brings a practical, builder-oriented perspective grounded in real-world implementation, with a focus on turning emerging capabilities into production-ready systems.\n\n### Speakers\n\n### Erik Siegmund\n\n### Borko Djurkovic\n#### Member of Technical Staff at Cohere\n\n### Addison Rennick\n#### Principal Developer | Building agentic AI systems that automate real browser workflows at scale\n\n### Travis Gosselin\n#### Principal Software Engineer @ GitHub\n\n### John Tobin\n#### Principal Consultant , Solsys\n\n### Steve Rogalsky\n\n### Sandy Liu\n#### Cineplex\n\n### Joël Hébert\n#### Certified Learn It All\n\n### David Paquette\n#### Principal Software Engineer\n\n### Dr. Tim Rogalsky\n\n### Conner Schiissler\n#### Solutions Architect at Databricks\n\n### Chris Ayers\n#### Principal Software Engineer @ Microsoft\n\n### Chris Woody Woodruff\n#### Independent Consultant at Woody Technology Studio LLC, Author, JetBrains Community Contributor and Microsoft MVP\n\n### Tri Ho\n#### Futurify, CEO\n\n### Peter Ritchie\n#### Independent Consultant\n\n### Dylan Smith\n#### Staff Engineer, Mortgage Automator\n\n### Jeff Lefebvre\n#### JeffGPT\n\n### Vamsi Krishna Reddy Munnangi\n#### Walmart, Senior Software Engineer\n\n### Kevin Evans\n#### Kevin Evans — Senior Strategic Solutions Engineer, Cloudflare · Founder, Code To Cloud\n\n### Dima Kramskoy\n#### SA/FDE at DoiT | AWS Community Builder\n\n### Ashleigh Lodge\n#### Accessibility Advocate & Speaker; Leader, Enterprise Apps, Neovation Learning Solutions\n\n### Jeff Kosciejew\n#### Agile Magician\n\n### Sarah Wimberley\n#### Architect of Technology Solutions and Integrations, Leading High-Performing Teams\n\n### Ricardo Covo\n#### Solutions Engineer - Software and Dev Tools @ Microsoft\n\n### Joy Marie Curtis\n#### AI Executive | Scaling Agentic AI into Enterprise Impact\n\n### Heather Ronnebeck\n#### Work Management Consultant & Atlassian Champion | Founder, Work Wranglers\n\n### Dave White\n#### Depth Consulting, Principal Consultant\n\n### Mike Edwards\n#### Challenge the Status Quo\n\n### Andrew Kuipers\n#### Sr. Staff Developer at iQmetrix\n\n### Alex Drenea\n#### Technology Enabler\n\n### Mike Craigen\n#### Customer Engineer – Public Sector Canada, Google Cloud\n\n### James Colp\n#### Manager, Technology & Development / Dungeon Master\n\n### Amy Norris\n#### Software Development Supervisor, Dimensional Innovations\n\n### Adam Krieger\n#### Security Architect, CISSP, CSSLP, CISA\n\n### Maria Volkova\n#### Senior UX Designer and Tech Lead at Neovation\n\n### Mike Sigsworth\n#### Principal Software Architect at Clear Measure\n\n### Joel Tosi\n#### Co-author of 'Signals & Levers (ITRevolution, September 2026)'; Coaching for Learning' and 'Creating your Dojo' - helping organizations learn to learn, make work easier, and deliver better products.\n\n### Jay Harris\n#### Problem Solver at Arana Software\n\n### Andy Barker\n#### Constantly trying to work out how to make work (and life) FUN !!\n\n### Dale Birtch\n#### Axon - Engineering manager (SRE)\n\n### Craig Tataryn\n#### I came, I saw, I... Segmentation Fault (core dumped)\n\n### Harold Campos\n#### Principal Program Manager for Azure Logic Apps, Microsoft Corporation\n\n### Simon MacDonald\n#### Staff Software Engineer at Sanity.io\n\n### Greg Peter-Joyal\n#### Improving, Senior Consultant in Data Engineering\n\n### Olena Shevchenko\n#### Data & AI Consultant at Improving\n\n### Cameron McKay\n#### Azure Integration MVP\n\n### Mike Diehl\n#### Director of Data Engineering and Business Intelligence at Improving\n\n### Carey Payette\n#### Financial Finesse\n\n### Simon Timms\n#### Solution Architect - Inventive\n\n### Martiall Pitts\n#### RiGEL, CEO & Founder, Indigenous tech sovereignty with deterministic infrastructure\n\n### David Wesst\n#### Creative Technologist | Solution Architect | Game Developer\n\n### Terri Broome\n#### IT Program Management Leader | Driving Operational Transformation | People, Process, & Technology Chaos Crusher\n\n### Rob Richardson\n#### robrich.org\n\n### Ben Goldstein\n#### Owner, Evergold Consulting Group\n\n### Sessions\nChris Ayers\n\n### Agent Skills, Plugins & Marketplaces\nAI coding assistants are powerful out of the box, but every team has unique workflows. This talk explores\nthe new extensibility model for GitHub Copilot: agent skills for teaching Copilot specialized tasks via SKILL.md\nfiles, plugins for packaging and distributing those capabilities, and marketplaces for discovering and sharing them\nacross teams.\nKey topics include:\n- Agent Skills — the folder-based, demand-loaded format that works across Copilot CLI, VS Code, Claude Code, Codex\nCLI, and Gemini CLI\n- Plugins — bundling skills, agents, hooks, and manifests into installable packages\n- Marketp\n\n--- interactive elements ---\n[0] <a> About\n[1] <a> Speakers\n[2] <a> Sessions\n[3] <a> Sponsors\n[4] <a> Tickets\n[5] <a> Venue\n[6] <a> FAQ\n[7] <a> Code of Conduct\n[8] <a> Join Our Mailing List!\n[9] <a> Email Us A Question!\n[10] <a> Erik Siegmund\n[11] <a> Borko Djurkovic\n[12] <a> Addison Rennick\n[13] <a> Travis Gosselin\n[14] <a> John Tobin\n[15] <a> Steve Rogalsky\n[16] <a> Sandy Liu\n[17] <a> Joël Hébert\n[18] <a> David Paquette\n[19] <a> Dr. Tim Rogalsky\n[20] <a> Conner Schiissler\n[21] <a> Chris Ayers\n[22] <a> Chris Woody Woodruff\n[23] <a> Tri Ho\n[24] <a> Peter Ritchie\n[25] <a> Dylan Smith\n[26] <a> Jeff Lefebvre\n[27] <a> Vamsi Krishna Reddy Munnangi\n[28] <a> Kevin Evans\n[29] <a> Dima Kramskoy\n[30] <a> Ashleigh Lodge\n[31] <a> Jeff Kosciejew\n[32] <a> Sarah Wimberley\n[33] <a> Ricardo Covo\n[34] <a> Joy Marie Curtis\n[35] <a> Heather Ronnebeck\n[36] <a> Dave White\n[37] <a> Mike Edwards\n[38] <a> Andrew Kuipers\n[39] <a> Alex Drenea\n[40] <a> Mike Craigen\n[41] <a> James Colp\n[42] <a> Amy Norris\n[43] <a> Adam Krieger\n[44] <a> Maria Volkova\n[45] <a> Mike Sigsworth\n[46] <a> Joel Tosi\n[47] <a> Jay Harris\n[48] <a> Andy Barker\n[49] <a> Dale Birtch\n[50] <a> Craig Tataryn\n[51] <a> Harold Campos\n[52] <a> Simon MacDonald\n[53] <a> Greg Peter-Joyal\n[54] <a> Olena Shevchenko\n[55] <a> Cameron McKay\n[56] <a> Mike Diehl\n[57] <a> Carey Payette\n[58] <a> Simon Timms\n[59] <a> Martiall Pitts\n[60] <a> David Wesst\n[61] <a> Terri Broome\n[62] <a> Rob Richardson\n[63] <a> Ben Goldstein\n[64] <a> Chris Ayers\n[65] <a> Joel Tosi\n[66] <a> Terri Broome\n[67] <a> Rob Richardson\n[68] <a> Travis Gosselin\n[69] <a> John Tobin\n[70] <a> Alex Drenea\n[71] <a> Harold Campos\n[72] <a> Ashleigh Lodge\n[73] <a> Joy Marie Curtis\n[74] <a> Travis Gosselin\n[75] <a> John Tobin\n[76] <a> Carey Payette\n[77] <a> Joël Hébert\n[78] <a> Dima Kramskoy\n[79] <a> Amy Norris\n[80] <a> Cameron McKay\n[81] <a> Simon Timms\n[82] <a> Dima Kramskoy\n[83] <a> Conner Schiissler\n[84] <a> Vamsi Krishna Reddy Munnangi\n[85] <a> Ricardo Covo\n[86] <a> Jeff Kosciejew\n[87] <a> Maria Volkova\n[88] <a> Vamsi Krishna Reddy Munnangi\n[89] <a> Martiall Pitts\n[90] <a> Peter Ritchie\n[91] <a> Andrew Kuipers\n[92] <a> Dale Birtch\n[93] <a> Chris Woody Woodruff\n[94] <a> Greg Peter-Joyal\n[95] <a> Sarah Wimberley\n[96] <a> Mike Diehl\n[97] <a> Chris Woody Woodruff\n[98] <a> Joël Hébert\n[99] <a> Olena Shevchenko\n[100] <a> Mike Craigen\n[101] <a> Rob Richardson\n[102] <a> Dylan Smith\n[103] <a> David Paquette\n[104] <a> Simon Timms\n[105] <a> Dave White\n[106] <a> Alex Drenea\n[107] <a> Harold Campos\n[108] <a> David Paquette\n[109] <a> Ben Goldstein\n[110] <a> Erik Siegmund\n[111] <a> Chris Ayers\n[112] <a> Andy Barker\n[113] <a> Kevin Evans\n[114] <a> Carey Payette\n[115] <a> Simon MacDonald\n[116] <a> Jeff Lefebvre\n[117] <a> Craig Tataryn\n[118] <a> Jay Harris\n[119] <a> Joy Marie Curtis\n[120] <a> Adam Krieger\n[121] <a> Heather Ronnebeck\n[122] <a> Addison Rennick\n[123] <a> Mike Edwards\n[124] <a> Sandy Liu\n[125] <a> Dale Birtch\n[126] <a> Kevin Evans\n[127] <a> Joel Tosi\n[128] <a> Terri Broome\n[129] <a> Andy Barker\n[130] <a> Jay Harris\n[131] <a> Jeff Kosciejew\n[132] <a> Mike Sigsworth\n[133] <a> Sarah Wimberley\n[134] <a> David Wesst\n[135] <a> Tri Ho\n[136] <a> James Colp\n[137] <a> Dr. Tim Rogalsky\n[138] <a> Steve Rogalsky\n[139] <a> Amy Norris\n[140] <a> Dave White\n[141] <a> Borko Djurkovic\n[142] <a> Session and Speaker Management powered by Sessionize.com\n[143] <a> \n[144] <a> \n[145] <a> \n[146] <a> \n[147] <a> \n[148] <a> \n[149] <a> \n[150] <a> \n[151] <a> \n[152] <a> \n[153] <a> Purchase Tickets Online\n[154] <a> Ti.to\n[155] <a> Request An Invoice!\n[156] <a> Email Us About Large Groups!\n[157] <a> Email Us A Question!\n[158] <a> Code of Conduct\n[159] <a> \n[160] <a> Xiaoying Riley",
+        "thought": "I'll help you find the session about execution modes for agentic workflows. Let me search the page for this information.",
+        "usage": {
+          "model": "claude-haiku-4-5-20251001",
+          "inputTokens": 5117,
+          "outputTokens": 86,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "index": 1,
+        "actions": [
+          {
+            "id": "toolu_01WfmxKx1u1HiPJnUdYtuKTE",
+            "tool": "find_in_page",
+            "args": {
+              "text": "execution modes"
+            },
+            "result": {
+              "ok": true,
+              "observation": {
+                "summary": "2 text match(es) for \"execution modes\":\n  Addison Rennick\n  \n> ### Speed vs. Accuracy: Execution Modes for Agentic Workflows\n  Not all agentic tasks are equal. Some need to move fast and recover gracefully from mistakes. Others are high-stakes multi-step workflows where getting the sequence wrong has real consequences. Building one execution model to handle both is a recipe for fragile agents that are either too slow for simple tasks or too unreliable for complex ones.\n  This talk dives into the three execution modes we built for a production agentic platform: Speed mode, which turns the LLM loose to pursue a goal directly across up to 50 turns; Accuracy mode, which breaks work into predefined subtasks with explicit dependency tracking; and Replay mode, which reuses cached actions from human-assisted training runs with a single validation call.\n---\n  ### Speed vs. Accuracy: Execution Modes for Agentic Workflows\n  Not all agentic tasks are equal. Some need to move fast and recover gracefully from mistakes. Others are high-stakes multi-step workflows where getting the sequence wrong has real consequences. Building one execution model to handle both is a recipe for fragile agents that are either too slow for simple tasks or too unreliable for complex ones.\n> This talk dives into the three execution modes we built for a production agentic platform: Speed mode, which turns the LLM loose to pursue a goal directly across up to 50 turns; Accuracy mode, which breaks work into predefined subtasks with explicit dependency tracking; and Replay mode, which reuses cached actions from human-assisted training runs with a single validation call.\n  We'll cover the design decisions behind each mode, when to reach for which one, how Accuracy mode's subtask graph prevents the \"lost in the middle\" failure pattern common in long agentic runs, and how Replay mode lets you treat a validated agent run as a reusable artifact. Whether you're building your first agent or scaling one to production, you'll walk away with a concrete framework for thinking about execution strategy — not just prompt engineering.\n  "
+              }
+            }
+          }
+        ],
+        "assistantBlocks": [
+          {
+            "type": "text",
+            "text": "Let me search the page for sessions related to execution modes and agentic workflows."
+          },
+          {
+            "type": "tool_use",
+            "id": "toolu_01WfmxKx1u1HiPJnUdYtuKTE",
+            "name": "find_in_page",
+            "input": {
+              "text": "execution modes"
+            }
+          }
+        ],
+        "toolResults": [
+          {
+            "type": "tool_result",
+            "toolUseId": "toolu_01WfmxKx1u1HiPJnUdYtuKTE",
+            "content": "2 text match(es) for \"execution modes\":\n  Addison Rennick\n  \n> ### Speed vs. Accuracy: Execution Modes for Agentic Workflows\n  Not all agentic tasks are equal. Some need to move fast and recover gracefully from mistakes. Others are high-stakes multi-step workflows where getting the sequence wrong has real consequences. Building one execution model to handle both is a recipe for fragile agents that are either too slow for simple tasks or too unreliable for complex ones.\n  This talk dives into the three execution modes we built for a production agentic platform: Speed mode, which turns the LLM loose to pursue a goal directly across up to 50 turns; Accuracy mode, which breaks work into predefined subtasks with explicit dependency tracking; and Replay mode, which reuses cached actions from human-assisted training runs with a single validation call.\n---\n  ### Speed vs. Accuracy: Execution Modes for Agentic Workflows\n  Not all agentic tasks are equal. Some need to move fast and recover gracefully from mistakes. Others are high-stakes multi-step workflows where getting the sequence wrong has real consequences. Building one execution model to handle both is a recipe for fragile agents that are either too slow for simple tasks or too unreliable for complex ones.\n> This talk dives into the three execution modes we built for a production agentic platform: Speed mode, which turns the LLM loose to pursue a goal directly across up to 50 turns; Accuracy mode, which breaks work into predefined subtasks with explicit dependency tracking; and Replay mode, which reuses cached actions from human-assisted training runs with a single validation call.\n  We'll cover the design decisions behind each mode, when to reach for which one, how Accuracy mode's subtask graph prevents the \"lost in the middle\" failure pattern common in long agentic runs, and how Replay mode lets you treat a validated agent run as a reusable artifact. Whether you're building your first agent or scaling one to production, you'll walk away with a concrete framework for thinking about execution strategy — not just prompt engineering.\n  ",
+            "isError": false
+          }
+        ],
+        "closed": true,
+        "cacheable": true,
+        "timing": {
+          "startedMs": 1788394383958,
+          "durationMs": 1597
+        },
+        "tail": "CURRENT STATE (fresh this turn — supersedes any state mentioned earlier):\nURL: https://www.prairiedevcon.com/\nTitle: Prairie Dev Con Winnipeg - September 21-22 2026\n\n--- page text (first 6000 of 79839 chars — use find_in_page to search the rest) ---\nAbout\n\nSpeakers\n\nSessions\n\nSponsors\n\nTickets\n\nVenue\n\nFAQ\n\nCode of Conduct\n\nSept 21 & 22 2026\nWinnipeg, MB\n\n2\n\nDays\n\n70+\n\nSessions\n\n50+\n\nSpeakers\n\n### The Largest AI & Software Development Conference on the Prairies!\nJoin us this September for the biggest Prairie Dev Con yet! We're expanding to six rooms of sessions over the two days and featuring over 40 world-class speakers delivering more than 70 sessions on all things software development and AI. Whether you're a developer, manager, or just passionate about tech, there's something for everyone at PrDC 2026!\n\nDon't miss out on this opportunity to learn, connect, and grow with the Prairie Dev Con community!\n\n#### Event Starts In:\n18\n\nDays\n\n2\n\nHrs\n\n46\n\nMins\n\n56\n\nSecs\n\nJoin Our Mailing List!\n\nEmail Us A Question!\n\n### Keynote\n#### Craig Shyjak, VP of Architecture, Laivly\nCraig Shyjak is a technology executive and architecture leader focused on the future of software development. With 20+ years of experience and a strong entrepreneurial drive, he has built and led teams delivering scalable platforms across cloud, data, and AI ecosystems.\n\nHis recent work explores the rise of agentic AI and its implications for how software is built and consumed. From augmenting developers with AI-driven workflows to designing systems where agents act on behalf of users, Craig focuses on what this shift means for architecture, team structures, and the role of engineers.\n\nHe brings a practical, builder-oriented perspective grounded in real-world implementation, with a focus on turning emerging capabilities into production-ready systems.\n\n### Speakers\n\n### Erik Siegmund\n\n### Borko Djurkovic\n#### Member of Technical Staff at Cohere\n\n### Addison Rennick\n#### Principal Developer | Building agentic AI systems that automate real browser workflows at scale\n\n### Travis Gosselin\n#### Principal Software Engineer @ GitHub\n\n### John Tobin\n#### Principal Consultant , Solsys\n\n### Steve Rogalsky\n\n### Sandy Liu\n#### Cineplex\n\n### Joël Hébert\n#### Certified Learn It All\n\n### David Paquette\n#### Principal Software Engineer\n\n### Dr. Tim Rogalsky\n\n### Conner Schiissler\n#### Solutions Architect at Databricks\n\n### Chris Ayers\n#### Principal Software Engineer @ Microsoft\n\n### Chris Woody Woodruff\n#### Independent Consultant at Woody Technology Studio LLC, Author, JetBrains Community Contributor and Microsoft MVP\n\n### Tri Ho\n#### Futurify, CEO\n\n### Peter Ritchie\n#### Independent Consultant\n\n### Dylan Smith\n#### Staff Engineer, Mortgage Automator\n\n### Jeff Lefebvre\n#### JeffGPT\n\n### Vamsi Krishna Reddy Munnangi\n#### Walmart, Senior Software Engineer\n\n### Kevin Evans\n#### Kevin Evans — Senior Strategic Solutions Engineer, Cloudflare · Founder, Code To Cloud\n\n### Dima Kramskoy\n#### SA/FDE at DoiT | AWS Community Builder\n\n### Ashleigh Lodge\n#### Accessibility Advocate & Speaker; Leader, Enterprise Apps, Neovation Learning Solutions\n\n### Jeff Kosciejew\n#### Agile Magician\n\n### Sarah Wimberley\n#### Architect of Technology Solutions and Integrations, Leading High-Performing Teams\n\n### Ricardo Covo\n#### Solutions Engineer - Software and Dev Tools @ Microsoft\n\n### Joy Marie Curtis\n#### AI Executive | Scaling Agentic AI into Enterprise Impact\n\n### Heather Ronnebeck\n#### Work Management Consultant & Atlassian Champion | Founder, Work Wranglers\n\n### Dave White\n#### Depth Consulting, Principal Consultant\n\n### Mike Edwards\n#### Challenge the Status Quo\n\n### Andrew Kuipers\n#### Sr. Staff Developer at iQmetrix\n\n### Alex Drenea\n#### Technology Enabler\n\n### Mike Craigen\n#### Customer Engineer – Public Sector Canada, Google Cloud\n\n### James Colp\n#### Manager, Technology & Development / Dungeon Master\n\n### Amy Norris\n#### Software Development Supervisor, Dimensional Innovations\n\n### Adam Krieger\n#### Security Architect, CISSP, CSSLP, CISA\n\n### Maria Volkova\n#### Senior UX Designer and Tech Lead at Neovation\n\n### Mike Sigsworth\n#### Principal Software Architect at Clear Measure\n\n### Joel Tosi\n#### Co-author of 'Signals & Levers (ITRevolution, September 2026)'; Coaching for Learning' and 'Creating your Dojo' - helping organizations learn to learn, make work easier, and deliver better products.\n\n### Jay Harris\n#### Problem Solver at Arana Software\n\n### Andy Barker\n#### Constantly trying to work out how to make work (and life) FUN !!\n\n### Dale Birtch\n#### Axon - Engineering manager (SRE)\n\n### Craig Tataryn\n#### I came, I saw, I... Segmentation Fault (core dumped)\n\n### Harold Campos\n#### Principal Program Manager for Azure Logic Apps, Microsoft Corporation\n\n### Simon MacDonald\n#### Staff Software Engineer at Sanity.io\n\n### Greg Peter-Joyal\n#### Improving, Senior Consultant in Data Engineering\n\n### Olena Shevchenko\n#### Data & AI Consultant at Improving\n\n### Cameron McKay\n#### Azure Integration MVP\n\n### Mike Diehl\n#### Director of Data Engineering and Business Intelligence at Improving\n\n### Carey Payette\n#### Financial Finesse\n\n### Simon Timms\n#### Solution Architect - Inventive\n\n### Martiall Pitts\n#### RiGEL, CEO & Founder, Indigenous tech sovereignty with deterministic infrastructure\n\n### David Wesst\n#### Creative Technologist | Solution Architect | Game Developer\n\n### Terri Broome\n#### IT Program Management Leader | Driving Operational Transformation | People, Process, & Technology Chaos Crusher\n\n### Rob Richardson\n#### robrich.org\n\n### Ben Goldstein\n#### Owner, Evergold Consulting Group\n\n### Sessions\nChris Ayers\n\n### Agent Skills, Plugins & Marketplaces\nAI coding assistants are powerful out of the box, but every team has unique workflows. This talk explores\nthe new extensibility model for GitHub Copilot: agent skills for teaching Copilot specialized tasks via SKILL.md\nfiles, plugins for packaging and distributing those capabilities, and marketplaces for discovering and sharing them\nacross teams.\nKey topics include:\n- Agent Skills — the folder-based, demand-loaded format that works across Copilot CLI, VS Code, Claude Code, Codex\nCLI, and Gemini CLI\n- Plugins — bundling skills, agents, hooks, and manifest\n\n--- interactive elements ---\n[0] <a> About\n[1] <a> Speakers\n[2] <a> Sessions\n[3] <a> Sponsors\n[4] <a> Tickets\n[5] <a> Venue\n[6] <a> FAQ\n[7] <a> Code of Conduct\n[8] <a> Join Our Mailing List!\n[9] <a> Email Us A Question!\n[10] <a> \n[11] <a> Erik Siegmund\n[12] <a> \n[13] <a> Borko Djurkovic\n[14] <a> \n[15] <a> Addison Rennick\n[16] <a> \n[17] <a> Travis Gosselin\n[18] <a> \n[19] <a> John Tobin\n[20] <a> \n[21] <a> Steve Rogalsky\n[22] <a> \n[23] <a> Sandy Liu\n[24] <a> \n[25] <a> Joël Hébert\n[26] <a> \n[27] <a> David Paquette\n[28] <a> \n[29] <a> Dr. Tim Rogalsky\n[30] <a> \n[31] <a> Conner Schiissler\n[32] <a> \n[33] <a> Chris Ayers\n[34] <a> \n[35] <a> Chris Woody Woodruff\n[36] <a> \n[37] <a> Tri Ho\n[38] <a> \n[39] <a> Peter Ritchie\n[40] <a> \n[41] <a> Dylan Smith\n[42] <a> \n[43] <a> Jeff Lefebvre\n[44] <a> \n[45] <a> Vamsi Krishna Reddy Munnangi\n[46] <a> \n[47] <a> Kevin Evans\n[48] <a> \n[49] <a> Dima Kramskoy\n[50] <a> \n[51] <a> Ashleigh Lodge\n[52] <a> \n[53] <a> Jeff Kosciejew\n[54] <a> \n[55] <a> Sarah Wimberley\n[56] <a> \n[57] <a> Ricardo Covo\n[58] <a> Joy Marie Curtis\n[59] <a> Heather Ronnebeck\n[60] <a> Dave White\n[61] <a> Mike Edwards\n[62] <a> Andrew Kuipers\n[63] <a> Alex Drenea\n[64] <a> Mike Craigen\n[65] <a> James Colp\n[66] <a> Amy Norris\n[67] <a> Adam Krieger\n[68] <a> Maria Volkova\n[69] <a> Mike Sigsworth\n[70] <a> Joel Tosi\n[71] <a> Jay Harris\n[72] <a> Andy Barker\n[73] <a> Dale Birtch\n[74] <a> Craig Tataryn\n[75] <a> Harold Campos\n[76] <a> Simon MacDonald\n[77] <a> Greg Peter-Joyal\n[78] <a> Olena Shevchenko\n[79] <a> Cameron McKay\n[80] <a> Mike Diehl\n[81] <a> Carey Payette\n[82] <a> Simon Timms\n[83] <a> Martiall Pitts\n[84] <a> David Wesst\n[85] <a> Terri Broome\n[86] <a> Rob Richardson\n[87] <a> Ben Goldstein\n[88] <a> Chris Ayers\n[89] <a> Joel Tosi\n[90] <a> Terri Broome\n[91] <a> Rob Richardson\n[92] <a> Travis Gosselin\n[93] <a> John Tobin\n[94] <a> Alex Drenea\n[95] <a> Harold Campos\n[96] <a> Ashleigh Lodge\n[97] <a> Joy Marie Curtis\n[98] <a> Travis Gosselin\n[99] <a> John Tobin\n[100] <a> Carey Payette\n[101] <a> Joël Hébert\n[102] <a> Dima Kramskoy\n[103] <a> Amy Norris\n[104] <a> Cameron McKay\n[105] <a> Simon Timms\n[106] <a> Dima Kramskoy\n[107] <a> Conner Schiissler\n[108] <a> Vamsi Krishna Reddy Munnangi\n[109] <a> Ricardo Covo\n[110] <a> Jeff Kosciejew\n[111] <a> Maria Volkova\n[112] <a> Vamsi Krishna Reddy Munnangi\n[113] <a> Martiall Pitts\n[114] <a> Peter Ritchie\n[115] <a> Andrew Kuipers\n[116] <a> Dale Birtch\n[117] <a> Chris Woody Woodruff\n[118] <a> Greg Peter-Joyal\n[119] <a> Sarah Wimberley\n[120] <a> Mike Diehl\n[121] <a> Chris Woody Woodruff\n[122] <a> Joël Hébert\n[123] <a> Olena Shevchenko\n[124] <a> Mike Craigen\n[125] <a> Rob Richardson\n[126] <a> Dylan Smith\n[127] <a> David Paquette\n[128] <a> Simon Timms\n[129] <a> Dave White\n[130] <a> Alex Drenea\n[131] <a> Harold Campos\n[132] <a> David Paquette\n[133] <a> Ben Goldstein\n[134] <a> Erik Siegmund\n[135] <a> Chris Ayers\n[136] <a> Andy Barker\n[137] <a> Kevin Evans\n[138] <a> Carey Payette\n[139] <a> Simon MacDonald\n[140] <a> Jeff Lefebvre\n[141] <a> Craig Tataryn\n[142] <a> Jay Harris\n[143] <a> Joy Marie Curtis\n[144] <a> Adam Krieger\n[145] <a> Heather Ronnebeck\n[146] <a> Addison Rennick\n[147] <a> Mike Edwards\n[148] <a> Sandy Liu\n[149] <a> Dale Birtch\n[150] <a> Kevin Evans\n[151] <a> Joel Tosi\n[152] <a> Terri Broome\n[153] <a> Andy Barker\n[154] <a> Jay Harris\n[155] <a> Jeff Kosciejew\n[156] <a> Mike Sigsworth\n[157] <a> Sarah Wimberley\n[158] <a> David Wesst\n[159] <a> Tri Ho\n[160] <a> James Colp\n[161] <a> Dr. Tim Rogalsky\n[162] <a> Steve Rogalsky\n[163] <a> Amy Norris\n[164] <a> Dave White\n[165] <a> Borko Djurkovic\n[166] <a> Session and Speaker Management powered by Sessionize.com\n[167] <a> \n[168] <a> \n[169] <a> \n[170] <a> \n[171] <a> \n[172] <a> \n[173] <a> \n[174] <a> \n[175] <a> \n[176] <a> \n[177] <a> Purchase Tickets Online\n[178] <a> Ti.to\n[179] <a> Request An Invoice!\n[180] <a> Email Us About Large Groups!\n[181] <a> Email Us A Question!\n[182] <a> Code of Conduct\n[183] <a> \n[184] <a> Xiaoying Riley",
+        "thought": "Let me search the page for sessions related to execution modes and agentic workflows.",
+        "usage": {
+          "model": "claude-haiku-4-5-20251001",
+          "inputTokens": 5447,
+          "outputTokens": 74,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "index": 2,
+        "actions": [
+          {
+            "id": "toolu_01Xprc5uDbU3wVDezkdCkHSC",
+            "tool": "complete",
+            "args": {
+              "status": "success",
+              "summary": "Found the session about execution modes for agentic workflows. Title: \"Speed vs. Accuracy: Execution Modes for Agentic Workflows\" - Speaker: Addison Rennick"
+            },
+            "result": {
+              "ok": true,
+              "done": true,
+              "completionStatus": "success",
+              "observation": {
+                "summary": "Completed (success): Found the session about execution modes for agentic workflows. Title: \"Speed vs. Accuracy: Execution Modes for Agentic Workflows\" - Speaker: Addison Rennick"
+              }
+            }
+          }
+        ],
+        "assistantBlocks": [
+          {
+            "type": "text",
+            "text": "Perfect! I found the information. Based on my search of the page, I can see the session details:\n\n**Session Title:** Speed vs. Accuracy: Execution Modes for Agentic Workflows\n\n**Speaker:** Addison Rennick\n\nThe session description explains that it covers three execution modes built for a production agentic platform: Speed mode, Accuracy mode, and Replay mode, and discusses design decisions, when to use each mode, and how they prevent common failure patterns in agentic runs."
+          },
+          {
+            "type": "tool_use",
+            "id": "toolu_01Xprc5uDbU3wVDezkdCkHSC",
+            "name": "complete",
+            "input": {
+              "status": "success",
+              "summary": "Found the session about execution modes for agentic workflows. Title: \"Speed vs. Accuracy: Execution Modes for Agentic Workflows\" - Speaker: Addison Rennick"
+            }
+          }
+        ],
+        "toolResults": [
+          {
+            "type": "tool_result",
+            "toolUseId": "toolu_01Xprc5uDbU3wVDezkdCkHSC",
+            "content": "Completed (success): Found the session about execution modes for agentic workflows. Title: \"Speed vs. Accuracy: Execution Modes for Agentic Workflows\" - Speaker: Addison Rennick",
+            "isError": false
+          }
+        ],
+        "closed": true,
+        "cacheable": true,
+        "timing": {
+          "startedMs": 1788394385580,
+          "durationMs": 3366
+        },
+        "tail": "CURRENT STATE (fresh this turn — supersedes any state mentioned earlier):\nURL: https://www.prairiedevcon.com/\nTitle: Prairie Dev Con Winnipeg - September 21-22 2026\n\n--- page text (first 6000 of 79839 chars — use find_in_page to search the rest) ---\nAbout\n\nSpeakers\n\nSessions\n\nSponsors\n\nTickets\n\nVenue\n\nFAQ\n\nCode of Conduct\n\nSept 21 & 22 2026\nWinnipeg, MB\n\n2\n\nDays\n\n70+\n\nSessions\n\n50+\n\nSpeakers\n\n### The Largest AI & Software Development Conference on the Prairies!\nJoin us this September for the biggest Prairie Dev Con yet! We're expanding to six rooms of sessions over the two days and featuring over 40 world-class speakers delivering more than 70 sessions on all things software development and AI. Whether you're a developer, manager, or just passionate about tech, there's something for everyone at PrDC 2026!\n\nDon't miss out on this opportunity to learn, connect, and grow with the Prairie Dev Con community!\n\n#### Event Starts In:\n18\n\nDays\n\n2\n\nHrs\n\n46\n\nMins\n\n55\n\nSecs\n\nJoin Our Mailing List!\n\nEmail Us A Question!\n\n### Keynote\n#### Craig Shyjak, VP of Architecture, Laivly\nCraig Shyjak is a technology executive and architecture leader focused on the future of software development. With 20+ years of experience and a strong entrepreneurial drive, he has built and led teams delivering scalable platforms across cloud, data, and AI ecosystems.\n\nHis recent work explores the rise of agentic AI and its implications for how software is built and consumed. From augmenting developers with AI-driven workflows to designing systems where agents act on behalf of users, Craig focuses on what this shift means for architecture, team structures, and the role of engineers.\n\nHe brings a practical, builder-oriented perspective grounded in real-world implementation, with a focus on turning emerging capabilities into production-ready systems.\n\n### Speakers\n\n### Erik Siegmund\n\n### Borko Djurkovic\n#### Member of Technical Staff at Cohere\n\n### Addison Rennick\n#### Principal Developer | Building agentic AI systems that automate real browser workflows at scale\n\n### Travis Gosselin\n#### Principal Software Engineer @ GitHub\n\n### John Tobin\n#### Principal Consultant , Solsys\n\n### Steve Rogalsky\n\n### Sandy Liu\n#### Cineplex\n\n### Joël Hébert\n#### Certified Learn It All\n\n### David Paquette\n#### Principal Software Engineer\n\n### Dr. Tim Rogalsky\n\n### Conner Schiissler\n#### Solutions Architect at Databricks\n\n### Chris Ayers\n#### Principal Software Engineer @ Microsoft\n\n### Chris Woody Woodruff\n#### Independent Consultant at Woody Technology Studio LLC, Author, JetBrains Community Contributor and Microsoft MVP\n\n### Tri Ho\n#### Futurify, CEO\n\n### Peter Ritchie\n#### Independent Consultant\n\n### Dylan Smith\n#### Staff Engineer, Mortgage Automator\n\n### Jeff Lefebvre\n#### JeffGPT\n\n### Vamsi Krishna Reddy Munnangi\n#### Walmart, Senior Software Engineer\n\n### Kevin Evans\n#### Kevin Evans — Senior Strategic Solutions Engineer, Cloudflare · Founder, Code To Cloud\n\n### Dima Kramskoy\n#### SA/FDE at DoiT | AWS Community Builder\n\n### Ashleigh Lodge\n#### Accessibility Advocate & Speaker; Leader, Enterprise Apps, Neovation Learning Solutions\n\n### Jeff Kosciejew\n#### Agile Magician\n\n### Sarah Wimberley\n#### Architect of Technology Solutions and Integrations, Leading High-Performing Teams\n\n### Ricardo Covo\n#### Solutions Engineer - Software and Dev Tools @ Microsoft\n\n### Joy Marie Curtis\n#### AI Executive | Scaling Agentic AI into Enterprise Impact\n\n### Heather Ronnebeck\n#### Work Management Consultant & Atlassian Champion | Founder, Work Wranglers\n\n### Dave White\n#### Depth Consulting, Principal Consultant\n\n### Mike Edwards\n#### Challenge the Status Quo\n\n### Andrew Kuipers\n#### Sr. Staff Developer at iQmetrix\n\n### Alex Drenea\n#### Technology Enabler\n\n### Mike Craigen\n#### Customer Engineer – Public Sector Canada, Google Cloud\n\n### James Colp\n#### Manager, Technology & Development / Dungeon Master\n\n### Amy Norris\n#### Software Development Supervisor, Dimensional Innovations\n\n### Adam Krieger\n#### Security Architect, CISSP, CSSLP, CISA\n\n### Maria Volkova\n#### Senior UX Designer and Tech Lead at Neovation\n\n### Mike Sigsworth\n#### Principal Software Architect at Clear Measure\n\n### Joel Tosi\n#### Co-author of 'Signals & Levers (ITRevolution, September 2026)'; Coaching for Learning' and 'Creating your Dojo' - helping organizations learn to learn, make work easier, and deliver better products.\n\n### Jay Harris\n#### Problem Solver at Arana Software\n\n### Andy Barker\n#### Constantly trying to work out how to make work (and life) FUN !!\n\n### Dale Birtch\n#### Axon - Engineering manager (SRE)\n\n### Craig Tataryn\n#### I came, I saw, I... Segmentation Fault (core dumped)\n\n### Harold Campos\n#### Principal Program Manager for Azure Logic Apps, Microsoft Corporation\n\n### Simon MacDonald\n#### Staff Software Engineer at Sanity.io\n\n### Greg Peter-Joyal\n#### Improving, Senior Consultant in Data Engineering\n\n### Olena Shevchenko\n#### Data & AI Consultant at Improving\n\n### Cameron McKay\n#### Azure Integration MVP\n\n### Mike Diehl\n#### Director of Data Engineering and Business Intelligence at Improving\n\n### Carey Payette\n#### Financial Finesse\n\n### Simon Timms\n#### Solution Architect - Inventive\n\n### Martiall Pitts\n#### RiGEL, CEO & Founder, Indigenous tech sovereignty with deterministic infrastructure\n\n### David Wesst\n#### Creative Technologist | Solution Architect | Game Developer\n\n### Terri Broome\n#### IT Program Management Leader | Driving Operational Transformation | People, Process, & Technology Chaos Crusher\n\n### Rob Richardson\n#### robrich.org\n\n### Ben Goldstein\n#### Owner, Evergold Consulting Group\n\n### Sessions\nChris Ayers\n\n### Agent Skills, Plugins & Marketplaces\nAI coding assistants are powerful out of the box, but every team has unique workflows. This talk explores\nthe new extensibility model for GitHub Copilot: agent skills for teaching Copilot specialized tasks via SKILL.md\nfiles, plugins for packaging and distributing those capabilities, and marketplaces for discovering and sharing them\nacross teams.\nKey topics include:\n- Agent Skills — the folder-based, demand-loaded format that works across Copilot CLI, VS Code, Claude Code, Codex\nCLI, and Gemini CLI\n- Plugins — bundling skills, agents, hooks, and manifest\n\n--- interactive elements ---\n[0] <a> About\n[1] <a> Speakers\n[2] <a> Sessions\n[3] <a> Sponsors\n[4] <a> Tickets\n[5] <a> Venue\n[6] <a> FAQ\n[7] <a> Code of Conduct\n[8] <a> Join Our Mailing List!\n[9] <a> Email Us A Question!\n[10] <a> \n[11] <a> Erik Siegmund\n[12] <a> \n[13] <a> Borko Djurkovic\n[14] <a> \n[15] <a> Addison Rennick\n[16] <a> \n[17] <a> Travis Gosselin\n[18] <a> \n[19] <a> John Tobin\n[20] <a> \n[21] <a> Steve Rogalsky\n[22] <a> \n[23] <a> Sandy Liu\n[24] <a> \n[25] <a> Joël Hébert\n[26] <a> \n[27] <a> David Paquette\n[28] <a> \n[29] <a> Dr. Tim Rogalsky\n[30] <a> \n[31] <a> Conner Schiissler\n[32] <a> \n[33] <a> Chris Ayers\n[34] <a> \n[35] <a> Chris Woody Woodruff\n[36] <a> \n[37] <a> Tri Ho\n[38] <a> \n[39] <a> Peter Ritchie\n[40] <a> \n[41] <a> Dylan Smith\n[42] <a> \n[43] <a> Jeff Lefebvre\n[44] <a> \n[45] <a> Vamsi Krishna Reddy Munnangi\n[46] <a> \n[47] <a> Kevin Evans\n[48] <a> \n[49] <a> Dima Kramskoy\n[50] <a> \n[51] <a> Ashleigh Lodge\n[52] <a> \n[53] <a> Jeff Kosciejew\n[54] <a> \n[55] <a> Sarah Wimberley\n[56] <a> \n[57] <a> Ricardo Covo\n[58] <a> Joy Marie Curtis\n[59] <a> Heather Ronnebeck\n[60] <a> Dave White\n[61] <a> Mike Edwards\n[62] <a> Andrew Kuipers\n[63] <a> Alex Drenea\n[64] <a> Mike Craigen\n[65] <a> James Colp\n[66] <a> Amy Norris\n[67] <a> Adam Krieger\n[68] <a> Maria Volkova\n[69] <a> Mike Sigsworth\n[70] <a> Joel Tosi\n[71] <a> Jay Harris\n[72] <a> Andy Barker\n[73] <a> Dale Birtch\n[74] <a> Craig Tataryn\n[75] <a> Harold Campos\n[76] <a> Simon MacDonald\n[77] <a> Greg Peter-Joyal\n[78] <a> Olena Shevchenko\n[79] <a> Cameron McKay\n[80] <a> Mike Diehl\n[81] <a> Carey Payette\n[82] <a> Simon Timms\n[83] <a> Martiall Pitts\n[84] <a> David Wesst\n[85] <a> Terri Broome\n[86] <a> Rob Richardson\n[87] <a> Ben Goldstein\n[88] <a> Chris Ayers\n[89] <a> Joel Tosi\n[90] <a> Terri Broome\n[91] <a> Rob Richardson\n[92] <a> Travis Gosselin\n[93] <a> John Tobin\n[94] <a> Alex Drenea\n[95] <a> Harold Campos\n[96] <a> Ashleigh Lodge\n[97] <a> Joy Marie Curtis\n[98] <a> Travis Gosselin\n[99] <a> John Tobin\n[100] <a> Carey Payette\n[101] <a> Joël Hébert\n[102] <a> Dima Kramskoy\n[103] <a> Amy Norris\n[104] <a> Cameron McKay\n[105] <a> Simon Timms\n[106] <a> Dima Kramskoy\n[107] <a> Conner Schiissler\n[108] <a> Vamsi Krishna Reddy Munnangi\n[109] <a> Ricardo Covo\n[110] <a> Jeff Kosciejew\n[111] <a> Maria Volkova\n[112] <a> Vamsi Krishna Reddy Munnangi\n[113] <a> Martiall Pitts\n[114] <a> Peter Ritchie\n[115] <a> Andrew Kuipers\n[116] <a> Dale Birtch\n[117] <a> Chris Woody Woodruff\n[118] <a> Greg Peter-Joyal\n[119] <a> Sarah Wimberley\n[120] <a> Mike Diehl\n[121] <a> Chris Woody Woodruff\n[122] <a> Joël Hébert\n[123] <a> Olena Shevchenko\n[124] <a> Mike Craigen\n[125] <a> Rob Richardson\n[126] <a> Dylan Smith\n[127] <a> David Paquette\n[128] <a> Simon Timms\n[129] <a> Dave White\n[130] <a> Alex Drenea\n[131] <a> Harold Campos\n[132] <a> David Paquette\n[133] <a> Ben Goldstein\n[134] <a> Erik Siegmund\n[135] <a> Chris Ayers\n[136] <a> Andy Barker\n[137] <a> Kevin Evans\n[138] <a> Carey Payette\n[139] <a> Simon MacDonald\n[140] <a> Jeff Lefebvre\n[141] <a> Craig Tataryn\n[142] <a> Jay Harris\n[143] <a> Joy Marie Curtis\n[144] <a> Adam Krieger\n[145] <a> Heather Ronnebeck\n[146] <a> Addison Rennick\n[147] <a> Mike Edwards\n[148] <a> Sandy Liu\n[149] <a> Dale Birtch\n[150] <a> Kevin Evans\n[151] <a> Joel Tosi\n[152] <a> Terri Broome\n[153] <a> Andy Barker\n[154] <a> Jay Harris\n[155] <a> Jeff Kosciejew\n[156] <a> Mike Sigsworth\n[157] <a> Sarah Wimberley\n[158] <a> David Wesst\n[159] <a> Tri Ho\n[160] <a> James Colp\n[161] <a> Dr. Tim Rogalsky\n[162] <a> Steve Rogalsky\n[163] <a> Amy Norris\n[164] <a> Dave White\n[165] <a> Borko Djurkovic\n[166] <a> Session and Speaker Management powered by Sessionize.com\n[167] <a> \n[168] <a> \n[169] <a> \n[170] <a> \n[171] <a> \n[172] <a> \n[173] <a> \n[174] <a> \n[175] <a> \n[176] <a> \n[177] <a> Purchase Tickets Online\n[178] <a> Ti.to\n[179] <a> Request An Invoice!\n[180] <a> Email Us About Large Groups!\n[181] <a> Email Us A Question!\n[182] <a> Code of Conduct\n[183] <a> \n[184] <a> Xiaoying Riley",
+        "thought": "Perfect! I found the information. Based on my search of the page, I can see the session details:\n\n**Session Title:** Speed vs. Accuracy: Execution Modes for Agentic Workflows\n\n**Speaker:** Addison Rennick\n\nThe session description explains that it covers three execution modes built for a production agentic platform: Speed mode, Accuracy mode, and Replay mode, and discusses design decisions, when to use each mode, and how they prevent common failure patterns in agentic runs.",
+        "usage": {
+          "model": "claude-haiku-4-5-20251001",
+          "inputTokens": 6006,
+          "outputTokens": 222,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      }
+    ],
+    "startedMs": 1788394376972,
+    "system": "You are Cadence, an autonomous agent that accomplishes a goal by calling tools against an environment.\nWork in small steps: inspect the current state, call exactly the tool you need, observe the result, repeat.\nWhen the goal is fully accomplished, call the complete tool with an appropriate status. Do not narrate excessively.\n\nSuccess criteria: Find the session about execution modes for agentic workflows and report its title and who is speaking.\n\nEnvironment (browser):\nA web browser. Each turn you receive a fresh CURRENT STATE block: cleaned page text plus a numbered list of interactive elements. Tool results are brief confirmations only. The page text may be a PREVIEW of a longer page — its header says so when it is. To look for something that isn't in the preview, use find_in_page rather than scrolling or re-reading: it searches the whole page and reports matching lines and elements. Act on elements by their [id]. Ids are re-assigned on every state refresh — always use ids from the LATEST current-state block. When the goal is met, call complete with an appropriate status.",
+    "tools": [
+      {
+        "name": "navigate",
+        "description": "Navigate the browser to a URL.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "description": "Absolute URL, including protocol."
+            }
+          },
+          "required": [
+            "url"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "click",
+        "description": "Click an interactive element from the latest snapshot, by its [id].",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "elementId": {
+              "type": "integer",
+              "description": "Element id from the latest snapshot."
+            }
+          },
+          "required": [
+            "elementId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "type_text",
+        "description": "Type into an input/textarea from the latest snapshot, replacing its contents.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "elementId": {
+              "type": "integer",
+              "description": "Element id from the latest snapshot."
+            },
+            "text": {
+              "type": "string"
+            },
+            "pressEnter": {
+              "type": "boolean",
+              "description": "Press Enter after typing."
+            }
+          },
+          "required": [
+            "elementId",
+            "text"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "read_page",
+        "description": "Read the current page's full text (less trimmed than the snapshot).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "find_in_page",
+        "description": "Search the current page for text. Returns each matching line with surrounding lines, plus any interactive elements whose label matches.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Case-insensitive text to search for."
+            },
+            "context": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10,
+              "description": "Lines of surrounding context per match. Default 2."
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "scroll",
+        "description": "Scroll the page. Page text is already extracted whole, so this is only for pages that load more content as you scroll.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "direction": {
+              "type": "string",
+              "enum": [
+                "up",
+                "down",
+                "top",
+                "bottom"
+              ],
+              "description": "Where to scroll."
+            }
+          },
+          "required": [
+            "direction"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "select_option",
+        "description": "Choose an option in a <select> dropdown, by the element's [id].",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "elementId": {
+              "type": "integer",
+              "description": "Element id from the latest snapshot."
+            },
+            "value": {
+              "type": "string",
+              "description": "Option value or visible label."
+            }
+          },
+          "required": [
+            "elementId",
+            "value"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "go_back",
+        "description": "Go back to the previous page in browser history.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "complete",
+        "description": "Declare the goal complete with a status. This ends the run — call it exactly once, when no further actions are needed. Statuses:\n- \"success\": The goal was fully accomplished.\n- \"failure\": The goal could not be accomplished; explain why in the summary.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "success",
+                "failure"
+              ],
+              "description": "How the goal concluded."
+            },
+            "summary": {
+              "type": "string",
+              "description": "A short summary of what was done (or why it failed)."
+            }
+          },
+          "required": [
+            "status",
+            "summary"
+          ],
+          "additionalProperties": false
+        }
+      }
+    ],
+    "initialObservation": {
+      "summary": "URL: https://www.prairiedevcon.com/\nTitle: Prairie Dev Con Winnipeg - September 21-22 2026\n\n--- page text (first 6000 of 79802 chars — use find_in_page to search the rest) ---\nAbout\n\nSpeakers\n\nSessions\n\nSponsors\n\nTickets\n\nVenue\n\nFAQ\n\nCode of Conduct\n\nSept 21 & 22 2026\nWinnipeg, MB\n\n2\n\nDays\n\n70+\n\nSessions\n\n50+\n\nSpeakers\n\n### The Largest AI & Software Development Conference on the Prairies!\nJoin us this September for the biggest Prairie Dev Con yet! We're expanding to six rooms of sessions over the two days and featuring over 40 world-class speakers delivering more than 70 sessions on all things software development and AI. Whether you're a developer, manager, or just passionate about tech, there's something for everyone at PrDC 2026!\n\nDon't miss out on this opportunity to learn, connect, and grow with the Prairie Dev Con community!\n\n#### Event Starts In:\n\nJoin Our Mailing List!\n\nEmail Us A Question!\n\n### Keynote\n#### Craig Shyjak, VP of Architecture, Laivly\nCraig Shyjak is a technology executive and architecture leader focused on the future of software development. With 20+ years of experience and a strong entrepreneurial drive, he has built and led teams delivering scalable platforms across cloud, data, and AI ecosystems.\n\nHis recent work explores the rise of agentic AI and its implications for how software is built and consumed. From augmenting developers with AI-driven workflows to designing systems where agents act on behalf of users, Craig focuses on what this shift means for architecture, team structures, and the role of engineers.\n\nHe brings a practical, builder-oriented perspective grounded in real-world implementation, with a focus on turning emerging capabilities into production-ready systems.\n\n### Speakers\n\n### Erik Siegmund\n\n### Borko Djurkovic\n#### Member of Technical Staff at Cohere\n\n### Addison Rennick\n#### Principal Developer | Building agentic AI systems that automate real browser workflows at scale\n\n### Travis Gosselin\n#### Principal Software Engineer @ GitHub\n\n### John Tobin\n#### Principal Consultant , Solsys\n\n### Steve Rogalsky\n\n### Sandy Liu\n#### Cineplex\n\n### Joël Hébert\n#### Certified Learn It All\n\n### David Paquette\n#### Principal Software Engineer\n\n### Dr. Tim Rogalsky\n\n### Conner Schiissler\n#### Solutions Architect at Databricks\n\n### Chris Ayers\n#### Principal Software Engineer @ Microsoft\n\n### Chris Woody Woodruff\n#### Independent Consultant at Woody Technology Studio LLC, Author, JetBrains Community Contributor and Microsoft MVP\n\n### Tri Ho\n#### Futurify, CEO\n\n### Peter Ritchie\n#### Independent Consultant\n\n### Dylan Smith\n#### Staff Engineer, Mortgage Automator\n\n### Jeff Lefebvre\n#### JeffGPT\n\n### Vamsi Krishna Reddy Munnangi\n#### Walmart, Senior Software Engineer\n\n### Kevin Evans\n#### Kevin Evans — Senior Strategic Solutions Engineer, Cloudflare · Founder, Code To Cloud\n\n### Dima Kramskoy\n#### SA/FDE at DoiT | AWS Community Builder\n\n### Ashleigh Lodge\n#### Accessibility Advocate & Speaker; Leader, Enterprise Apps, Neovation Learning Solutions\n\n### Jeff Kosciejew\n#### Agile Magician\n\n### Sarah Wimberley\n#### Architect of Technology Solutions and Integrations, Leading High-Performing Teams\n\n### Ricardo Covo\n#### Solutions Engineer - Software and Dev Tools @ Microsoft\n\n### Joy Marie Curtis\n#### AI Executive | Scaling Agentic AI into Enterprise Impact\n\n### Heather Ronnebeck\n#### Work Management Consultant & Atlassian Champion | Founder, Work Wranglers\n\n### Dave White\n#### Depth Consulting, Principal Consultant\n\n### Mike Edwards\n#### Challenge the Status Quo\n\n### Andrew Kuipers\n#### Sr. Staff Developer at iQmetrix\n\n### Alex Drenea\n#### Technology Enabler\n\n### Mike Craigen\n#### Customer Engineer – Public Sector Canada, Google Cloud\n\n### James Colp\n#### Manager, Technology & Development / Dungeon Master\n\n### Amy Norris\n#### Software Development Supervisor, Dimensional Innovations\n\n### Adam Krieger\n#### Security Architect, CISSP, CSSLP, CISA\n\n### Maria Volkova\n#### Senior UX Designer and Tech Lead at Neovation\n\n### Mike Sigsworth\n#### Principal Software Architect at Clear Measure\n\n### Joel Tosi\n#### Co-author of 'Signals & Levers (ITRevolution, September 2026)'; Coaching for Learning' and 'Creating your Dojo' - helping organizations learn to learn, make work easier, and deliver better products.\n\n### Jay Harris\n#### Problem Solver at Arana Software\n\n### Andy Barker\n#### Constantly trying to work out how to make work (and life) FUN !!\n\n### Dale Birtch\n#### Axon - Engineering manager (SRE)\n\n### Craig Tataryn\n#### I came, I saw, I... Segmentation Fault (core dumped)\n\n### Harold Campos\n#### Principal Program Manager for Azure Logic Apps, Microsoft Corporation\n\n### Simon MacDonald\n#### Staff Software Engineer at Sanity.io\n\n### Greg Peter-Joyal\n#### Improving, Senior Consultant in Data Engineering\n\n### Olena Shevchenko\n#### Data & AI Consultant at Improving\n\n### Cameron McKay\n#### Azure Integration MVP\n\n### Mike Diehl\n#### Director of Data Engineering and Business Intelligence at Improving\n\n### Carey Payette\n#### Financial Finesse\n\n### Simon Timms\n#### Solution Architect - Inventive\n\n### Martiall Pitts\n#### RiGEL, CEO & Founder, Indigenous tech sovereignty with deterministic infrastructure\n\n### David Wesst\n#### Creative Technologist | Solution Architect | Game Developer\n\n### Terri Broome\n#### IT Program Management Leader | Driving Operational Transformation | People, Process, & Technology Chaos Crusher\n\n### Rob Richardson\n#### robrich.org\n\n### Ben Goldstein\n#### Owner, Evergold Consulting Group\n\n### Sessions\nChris Ayers\n\n### Agent Skills, Plugins & Marketplaces\nAI coding assistants are powerful out of the box, but every team has unique workflows. This talk explores\nthe new extensibility model for GitHub Copilot: agent skills for teaching Copilot specialized tasks via SKILL.md\nfiles, plugins for packaging and distributing those capabilities, and marketplaces for discovering and sharing them\nacross teams.\nKey topics include:\n- Agent Skills — the folder-based, demand-loaded format that works across Copilot CLI, VS Code, Claude Code, Codex\nCLI, and Gemini CLI\n- Plugins — bundling skills, agents, hooks, and manifests into installable packages\n- Marketp\n\n--- interactive elements ---\n[0] <a> About\n[1] <a> Speakers\n[2] <a> Sessions\n[3] <a> Sponsors\n[4] <a> Tickets\n[5] <a> Venue\n[6] <a> FAQ\n[7] <a> Code of Conduct\n[8] <a> Join Our Mailing List!\n[9] <a> Email Us A Question!\n[10] <a> Erik Siegmund\n[11] <a> Borko Djurkovic\n[12] <a> Addison Rennick\n[13] <a> Travis Gosselin\n[14] <a> John Tobin\n[15] <a> Steve Rogalsky\n[16] <a> Sandy Liu\n[17] <a> Joël Hébert\n[18] <a> David Paquette\n[19] <a> Dr. Tim Rogalsky\n[20] <a> Conner Schiissler\n[21] <a> Chris Ayers\n[22] <a> Chris Woody Woodruff\n[23] <a> Tri Ho\n[24] <a> Peter Ritchie\n[25] <a> Dylan Smith\n[26] <a> Jeff Lefebvre\n[27] <a> Vamsi Krishna Reddy Munnangi\n[28] <a> Kevin Evans\n[29] <a> Dima Kramskoy\n[30] <a> Ashleigh Lodge\n[31] <a> Jeff Kosciejew\n[32] <a> Sarah Wimberley\n[33] <a> Ricardo Covo\n[34] <a> Joy Marie Curtis\n[35] <a> Heather Ronnebeck\n[36] <a> Dave White\n[37] <a> Mike Edwards\n[38] <a> Andrew Kuipers\n[39] <a> Alex Drenea\n[40] <a> Mike Craigen\n[41] <a> James Colp\n[42] <a> Amy Norris\n[43] <a> Adam Krieger\n[44] <a> Maria Volkova\n[45] <a> Mike Sigsworth\n[46] <a> Joel Tosi\n[47] <a> Jay Harris\n[48] <a> Andy Barker\n[49] <a> Dale Birtch\n[50] <a> Craig Tataryn\n[51] <a> Harold Campos\n[52] <a> Simon MacDonald\n[53] <a> Greg Peter-Joyal\n[54] <a> Olena Shevchenko\n[55] <a> Cameron McKay\n[56] <a> Mike Diehl\n[57] <a> Carey Payette\n[58] <a> Simon Timms\n[59] <a> Martiall Pitts\n[60] <a> David Wesst\n[61] <a> Terri Broome\n[62] <a> Rob Richardson\n[63] <a> Ben Goldstein\n[64] <a> Chris Ayers\n[65] <a> Joel Tosi\n[66] <a> Terri Broome\n[67] <a> Rob Richardson\n[68] <a> Travis Gosselin\n[69] <a> John Tobin\n[70] <a> Alex Drenea\n[71] <a> Harold Campos\n[72] <a> Ashleigh Lodge\n[73] <a> Joy Marie Curtis\n[74] <a> Travis Gosselin\n[75] <a> John Tobin\n[76] <a> Carey Payette\n[77] <a> Joël Hébert\n[78] <a> Dima Kramskoy\n[79] <a> Amy Norris\n[80] <a> Cameron McKay\n[81] <a> Simon Timms\n[82] <a> Dima Kramskoy\n[83] <a> Conner Schiissler\n[84] <a> Vamsi Krishna Reddy Munnangi\n[85] <a> Ricardo Covo\n[86] <a> Jeff Kosciejew\n[87] <a> Maria Volkova\n[88] <a> Vamsi Krishna Reddy Munnangi\n[89] <a> Martiall Pitts\n[90] <a> Peter Ritchie\n[91] <a> Andrew Kuipers\n[92] <a> Dale Birtch\n[93] <a> Chris Woody Woodruff\n[94] <a> Greg Peter-Joyal\n[95] <a> Sarah Wimberley\n[96] <a> Mike Diehl\n[97] <a> Chris Woody Woodruff\n[98] <a> Joël Hébert\n[99] <a> Olena Shevchenko\n[100] <a> Mike Craigen\n[101] <a> Rob Richardson\n[102] <a> Dylan Smith\n[103] <a> David Paquette\n[104] <a> Simon Timms\n[105] <a> Dave White\n[106] <a> Alex Drenea\n[107] <a> Harold Campos\n[108] <a> David Paquette\n[109] <a> Ben Goldstein\n[110] <a> Erik Siegmund\n[111] <a> Chris Ayers\n[112] <a> Andy Barker\n[113] <a> Kevin Evans\n[114] <a> Carey Payette\n[115] <a> Simon MacDonald\n[116] <a> Jeff Lefebvre\n[117] <a> Craig Tataryn\n[118] <a> Jay Harris\n[119] <a> Joy Marie Curtis\n[120] <a> Adam Krieger\n[121] <a> Heather Ronnebeck\n[122] <a> Addison Rennick\n[123] <a> Mike Edwards\n[124] <a> Sandy Liu\n[125] <a> Dale Birtch\n[126] <a> Kevin Evans\n[127] <a> Joel Tosi\n[128] <a> Terri Broome\n[129] <a> Andy Barker\n[130] <a> Jay Harris\n[131] <a> Jeff Kosciejew\n[132] <a> Mike Sigsworth\n[133] <a> Sarah Wimberley\n[134] <a> David Wesst\n[135] <a> Tri Ho\n[136] <a> James Colp\n[137] <a> Dr. Tim Rogalsky\n[138] <a> Steve Rogalsky\n[139] <a> Amy Norris\n[140] <a> Dave White\n[141] <a> Borko Djurkovic\n[142] <a> Session and Speaker Management powered by Sessionize.com\n[143] <a> \n[144] <a> \n[145] <a> \n[146] <a> \n[147] <a> \n[148] <a> \n[149] <a> \n[150] <a> \n[151] <a> \n[152] <a> \n[153] <a> Purchase Tickets Online\n[154] <a> Ti.to\n[155] <a> Request An Invoice!\n[156] <a> Email Us About Large Groups!\n[157] <a> Email Us A Question!\n[158] <a> Code of Conduct\n[159] <a> \n[160] <a> Xiaoying Riley",
+      "raw": {
+        "url": "https://www.prairiedevcon.com/",
+        "elements": [
+          {
+            "id": 0,
+            "tag": "a",
+            "label": "About",
+            "value": ""
+          },
+          {
+            "id": 1,
+            "tag": "a",
+            "label": "Speakers",
+            "value": ""
+          },
+          {
+            "id": 2,
+            "tag": "a",
+            "label": "Sessions",
+            "value": ""
+          },
+          {
+            "id": 3,
+            "tag": "a",
+            "label": "Sponsors",
+            "value": ""
+          },
+          {
+            "id": 4,
+            "tag": "a",
+            "label": "Tickets",
+            "value": ""
+          },
+          {
+            "id": 5,
+            "tag": "a",
+            "label": "Venue",
+            "value": ""
+          },
+          {
+            "id": 6,
+            "tag": "a",
+            "label": "FAQ",
+            "value": ""
+          },
+          {
+            "id": 7,
+            "tag": "a",
+            "label": "Code of Conduct",
+            "value": ""
+          },
+          {
+            "id": 8,
+            "tag": "a",
+            "label": "Join Our Mailing List!",
+            "value": ""
+          },
+          {
+            "id": 9,
+            "tag": "a",
+            "label": "Email Us A Question!",
+            "value": ""
+          },
+          {
+            "id": 10,
+            "tag": "a",
+            "label": "Erik Siegmund",
+            "value": ""
+          },
+          {
+            "id": 11,
+            "tag": "a",
+            "label": "Borko Djurkovic",
+            "value": ""
+          },
+          {
+            "id": 12,
+            "tag": "a",
+            "label": "Addison Rennick",
+            "value": ""
+          },
+          {
+            "id": 13,
+            "tag": "a",
+            "label": "Travis Gosselin",
+            "value": ""
+          },
+          {
+            "id": 14,
+            "tag": "a",
+            "label": "John Tobin",
+            "value": ""
+          },
+          {
+            "id": 15,
+            "tag": "a",
+            "label": "Steve Rogalsky",
+            "value": ""
+          },
+          {
+            "id": 16,
+            "tag": "a",
+            "label": "Sandy Liu",
+            "value": ""
+          },
+          {
+            "id": 17,
+            "tag": "a",
+            "label": "Joël Hébert",
+            "value": ""
+          },
+          {
+            "id": 18,
+            "tag": "a",
+            "label": "David Paquette",
+            "value": ""
+          },
+          {
+            "id": 19,
+            "tag": "a",
+            "label": "Dr. Tim Rogalsky",
+            "value": ""
+          },
+          {
+            "id": 20,
+            "tag": "a",
+            "label": "Conner Schiissler",
+            "value": ""
+          },
+          {
+            "id": 21,
+            "tag": "a",
+            "label": "Chris Ayers",
+            "value": ""
+          },
+          {
+            "id": 22,
+            "tag": "a",
+            "label": "Chris Woody Woodruff",
+            "value": ""
+          },
+          {
+            "id": 23,
+            "tag": "a",
+            "label": "Tri Ho",
+            "value": ""
+          },
+          {
+            "id": 24,
+            "tag": "a",
+            "label": "Peter Ritchie",
+            "value": ""
+          },
+          {
+            "id": 25,
+            "tag": "a",
+            "label": "Dylan Smith",
+            "value": ""
+          },
+          {
+            "id": 26,
+            "tag": "a",
+            "label": "Jeff Lefebvre",
+            "value": ""
+          },
+          {
+            "id": 27,
+            "tag": "a",
+            "label": "Vamsi Krishna Reddy Munnangi",
+            "value": ""
+          },
+          {
+            "id": 28,
+            "tag": "a",
+            "label": "Kevin Evans",
+            "value": ""
+          },
+          {
+            "id": 29,
+            "tag": "a",
+            "label": "Dima Kramskoy",
+            "value": ""
+          },
+          {
+            "id": 30,
+            "tag": "a",
+            "label": "Ashleigh Lodge",
+            "value": ""
+          },
+          {
+            "id": 31,
+            "tag": "a",
+            "label": "Jeff Kosciejew",
+            "value": ""
+          },
+          {
+            "id": 32,
+            "tag": "a",
+            "label": "Sarah Wimberley",
+            "value": ""
+          },
+          {
+            "id": 33,
+            "tag": "a",
+            "label": "Ricardo Covo",
+            "value": ""
+          },
+          {
+            "id": 34,
+            "tag": "a",
+            "label": "Joy Marie Curtis",
+            "value": ""
+          },
+          {
+            "id": 35,
+            "tag": "a",
+            "label": "Heather Ronnebeck",
+            "value": ""
+          },
+          {
+            "id": 36,
+            "tag": "a",
+            "label": "Dave White",
+            "value": ""
+          },
+          {
+            "id": 37,
+            "tag": "a",
+            "label": "Mike Edwards",
+            "value": ""
+          },
+          {
+            "id": 38,
+            "tag": "a",
+            "label": "Andrew Kuipers",
+            "value": ""
+          },
+          {
+            "id": 39,
+            "tag": "a",
+            "label": "Alex Drenea",
+            "value": ""
+          },
+          {
+            "id": 40,
+            "tag": "a",
+            "label": "Mike Craigen",
+            "value": ""
+          },
+          {
+            "id": 41,
+            "tag": "a",
+            "label": "James Colp",
+            "value": ""
+          },
+          {
+            "id": 42,
+            "tag": "a",
+            "label": "Amy Norris",
+            "value": ""
+          },
+          {
+            "id": 43,
+            "tag": "a",
+            "label": "Adam Krieger",
+            "value": ""
+          },
+          {
+            "id": 44,
+            "tag": "a",
+            "label": "Maria Volkova",
+            "value": ""
+          },
+          {
+            "id": 45,
+            "tag": "a",
+            "label": "Mike Sigsworth",
+            "value": ""
+          },
+          {
+            "id": 46,
+            "tag": "a",
+            "label": "Joel Tosi",
+            "value": ""
+          },
+          {
+            "id": 47,
+            "tag": "a",
+            "label": "Jay Harris",
+            "value": ""
+          },
+          {
+            "id": 48,
+            "tag": "a",
+            "label": "Andy Barker",
+            "value": ""
+          },
+          {
+            "id": 49,
+            "tag": "a",
+            "label": "Dale Birtch",
+            "value": ""
+          },
+          {
+            "id": 50,
+            "tag": "a",
+            "label": "Craig Tataryn",
+            "value": ""
+          },
+          {
+            "id": 51,
+            "tag": "a",
+            "label": "Harold Campos",
+            "value": ""
+          },
+          {
+            "id": 52,
+            "tag": "a",
+            "label": "Simon MacDonald",
+            "value": ""
+          },
+          {
+            "id": 53,
+            "tag": "a",
+            "label": "Greg Peter-Joyal",
+            "value": ""
+          },
+          {
+            "id": 54,
+            "tag": "a",
+            "label": "Olena Shevchenko",
+            "value": ""
+          },
+          {
+            "id": 55,
+            "tag": "a",
+            "label": "Cameron McKay",
+            "value": ""
+          },
+          {
+            "id": 56,
+            "tag": "a",
+            "label": "Mike Diehl",
+            "value": ""
+          },
+          {
+            "id": 57,
+            "tag": "a",
+            "label": "Carey Payette",
+            "value": ""
+          },
+          {
+            "id": 58,
+            "tag": "a",
+            "label": "Simon Timms",
+            "value": ""
+          },
+          {
+            "id": 59,
+            "tag": "a",
+            "label": "Martiall Pitts",
+            "value": ""
+          },
+          {
+            "id": 60,
+            "tag": "a",
+            "label": "David Wesst",
+            "value": ""
+          },
+          {
+            "id": 61,
+            "tag": "a",
+            "label": "Terri Broome",
+            "value": ""
+          },
+          {
+            "id": 62,
+            "tag": "a",
+            "label": "Rob Richardson",
+            "value": ""
+          },
+          {
+            "id": 63,
+            "tag": "a",
+            "label": "Ben Goldstein",
+            "value": ""
+          },
+          {
+            "id": 64,
+            "tag": "a",
+            "label": "Chris Ayers",
+            "value": ""
+          },
+          {
+            "id": 65,
+            "tag": "a",
+            "label": "Joel Tosi",
+            "value": ""
+          },
+          {
+            "id": 66,
+            "tag": "a",
+            "label": "Terri Broome",
+            "value": ""
+          },
+          {
+            "id": 67,
+            "tag": "a",
+            "label": "Rob Richardson",
+            "value": ""
+          },
+          {
+            "id": 68,
+            "tag": "a",
+            "label": "Travis Gosselin",
+            "value": ""
+          },
+          {
+            "id": 69,
+            "tag": "a",
+            "label": "John Tobin",
+            "value": ""
+          },
+          {
+            "id": 70,
+            "tag": "a",
+            "label": "Alex Drenea",
+            "value": ""
+          },
+          {
+            "id": 71,
+            "tag": "a",
+            "label": "Harold Campos",
+            "value": ""
+          },
+          {
+            "id": 72,
+            "tag": "a",
+            "label": "Ashleigh Lodge",
+            "value": ""
+          },
+          {
+            "id": 73,
+            "tag": "a",
+            "label": "Joy Marie Curtis",
+            "value": ""
+          },
+          {
+            "id": 74,
+            "tag": "a",
+            "label": "Travis Gosselin",
+            "value": ""
+          },
+          {
+            "id": 75,
+            "tag": "a",
+            "label": "John Tobin",
+            "value": ""
+          },
+          {
+            "id": 76,
+            "tag": "a",
+            "label": "Carey Payette",
+            "value": ""
+          },
+          {
+            "id": 77,
+            "tag": "a",
+            "label": "Joël Hébert",
+            "value": ""
+          },
+          {
+            "id": 78,
+            "tag": "a",
+            "label": "Dima Kramskoy",
+            "value": ""
+          },
+          {
+            "id": 79,
+            "tag": "a",
+            "label": "Amy Norris",
+            "value": ""
+          },
+          {
+            "id": 80,
+            "tag": "a",
+            "label": "Cameron McKay",
+            "value": ""
+          },
+          {
+            "id": 81,
+            "tag": "a",
+            "label": "Simon Timms",
+            "value": ""
+          },
+          {
+            "id": 82,
+            "tag": "a",
+            "label": "Dima Kramskoy",
+            "value": ""
+          },
+          {
+            "id": 83,
+            "tag": "a",
+            "label": "Conner Schiissler",
+            "value": ""
+          },
+          {
+            "id": 84,
+            "tag": "a",
+            "label": "Vamsi Krishna Reddy Munnangi",
+            "value": ""
+          },
+          {
+            "id": 85,
+            "tag": "a",
+            "label": "Ricardo Covo",
+            "value": ""
+          },
+          {
+            "id": 86,
+            "tag": "a",
+            "label": "Jeff Kosciejew",
+            "value": ""
+          },
+          {
+            "id": 87,
+            "tag": "a",
+            "label": "Maria Volkova",
+            "value": ""
+          },
+          {
+            "id": 88,
+            "tag": "a",
+            "label": "Vamsi Krishna Reddy Munnangi",
+            "value": ""
+          },
+          {
+            "id": 89,
+            "tag": "a",
+            "label": "Martiall Pitts",
+            "value": ""
+          },
+          {
+            "id": 90,
+            "tag": "a",
+            "label": "Peter Ritchie",
+            "value": ""
+          },
+          {
+            "id": 91,
+            "tag": "a",
+            "label": "Andrew Kuipers",
+            "value": ""
+          },
+          {
+            "id": 92,
+            "tag": "a",
+            "label": "Dale Birtch",
+            "value": ""
+          },
+          {
+            "id": 93,
+            "tag": "a",
+            "label": "Chris Woody Woodruff",
+            "value": ""
+          },
+          {
+            "id": 94,
+            "tag": "a",
+            "label": "Greg Peter-Joyal",
+            "value": ""
+          },
+          {
+            "id": 95,
+            "tag": "a",
+            "label": "Sarah Wimberley",
+            "value": ""
+          },
+          {
+            "id": 96,
+            "tag": "a",
+            "label": "Mike Diehl",
+            "value": ""
+          },
+          {
+            "id": 97,
+            "tag": "a",
+            "label": "Chris Woody Woodruff",
+            "value": ""
+          },
+          {
+            "id": 98,
+            "tag": "a",
+            "label": "Joël Hébert",
+            "value": ""
+          },
+          {
+            "id": 99,
+            "tag": "a",
+            "label": "Olena Shevchenko",
+            "value": ""
+          },
+          {
+            "id": 100,
+            "tag": "a",
+            "label": "Mike Craigen",
+            "value": ""
+          },
+          {
+            "id": 101,
+            "tag": "a",
+            "label": "Rob Richardson",
+            "value": ""
+          },
+          {
+            "id": 102,
+            "tag": "a",
+            "label": "Dylan Smith",
+            "value": ""
+          },
+          {
+            "id": 103,
+            "tag": "a",
+            "label": "David Paquette",
+            "value": ""
+          },
+          {
+            "id": 104,
+            "tag": "a",
+            "label": "Simon Timms",
+            "value": ""
+          },
+          {
+            "id": 105,
+            "tag": "a",
+            "label": "Dave White",
+            "value": ""
+          },
+          {
+            "id": 106,
+            "tag": "a",
+            "label": "Alex Drenea",
+            "value": ""
+          },
+          {
+            "id": 107,
+            "tag": "a",
+            "label": "Harold Campos",
+            "value": ""
+          },
+          {
+            "id": 108,
+            "tag": "a",
+            "label": "David Paquette",
+            "value": ""
+          },
+          {
+            "id": 109,
+            "tag": "a",
+            "label": "Ben Goldstein",
+            "value": ""
+          },
+          {
+            "id": 110,
+            "tag": "a",
+            "label": "Erik Siegmund",
+            "value": ""
+          },
+          {
+            "id": 111,
+            "tag": "a",
+            "label": "Chris Ayers",
+            "value": ""
+          },
+          {
+            "id": 112,
+            "tag": "a",
+            "label": "Andy Barker",
+            "value": ""
+          },
+          {
+            "id": 113,
+            "tag": "a",
+            "label": "Kevin Evans",
+            "value": ""
+          },
+          {
+            "id": 114,
+            "tag": "a",
+            "label": "Carey Payette",
+            "value": ""
+          },
+          {
+            "id": 115,
+            "tag": "a",
+            "label": "Simon MacDonald",
+            "value": ""
+          },
+          {
+            "id": 116,
+            "tag": "a",
+            "label": "Jeff Lefebvre",
+            "value": ""
+          },
+          {
+            "id": 117,
+            "tag": "a",
+            "label": "Craig Tataryn",
+            "value": ""
+          },
+          {
+            "id": 118,
+            "tag": "a",
+            "label": "Jay Harris",
+            "value": ""
+          },
+          {
+            "id": 119,
+            "tag": "a",
+            "label": "Joy Marie Curtis",
+            "value": ""
+          },
+          {
+            "id": 120,
+            "tag": "a",
+            "label": "Adam Krieger",
+            "value": ""
+          },
+          {
+            "id": 121,
+            "tag": "a",
+            "label": "Heather Ronnebeck",
+            "value": ""
+          },
+          {
+            "id": 122,
+            "tag": "a",
+            "label": "Addison Rennick",
+            "value": ""
+          },
+          {
+            "id": 123,
+            "tag": "a",
+            "label": "Mike Edwards",
+            "value": ""
+          },
+          {
+            "id": 124,
+            "tag": "a",
+            "label": "Sandy Liu",
+            "value": ""
+          },
+          {
+            "id": 125,
+            "tag": "a",
+            "label": "Dale Birtch",
+            "value": ""
+          },
+          {
+            "id": 126,
+            "tag": "a",
+            "label": "Kevin Evans",
+            "value": ""
+          },
+          {
+            "id": 127,
+            "tag": "a",
+            "label": "Joel Tosi",
+            "value": ""
+          },
+          {
+            "id": 128,
+            "tag": "a",
+            "label": "Terri Broome",
+            "value": ""
+          },
+          {
+            "id": 129,
+            "tag": "a",
+            "label": "Andy Barker",
+            "value": ""
+          },
+          {
+            "id": 130,
+            "tag": "a",
+            "label": "Jay Harris",
+            "value": ""
+          },
+          {
+            "id": 131,
+            "tag": "a",
+            "label": "Jeff Kosciejew",
+            "value": ""
+          },
+          {
+            "id": 132,
+            "tag": "a",
+            "label": "Mike Sigsworth",
+            "value": ""
+          },
+          {
+            "id": 133,
+            "tag": "a",
+            "label": "Sarah Wimberley",
+            "value": ""
+          },
+          {
+            "id": 134,
+            "tag": "a",
+            "label": "David Wesst",
+            "value": ""
+          },
+          {
+            "id": 135,
+            "tag": "a",
+            "label": "Tri Ho",
+            "value": ""
+          },
+          {
+            "id": 136,
+            "tag": "a",
+            "label": "James Colp",
+            "value": ""
+          },
+          {
+            "id": 137,
+            "tag": "a",
+            "label": "Dr. Tim Rogalsky",
+            "value": ""
+          },
+          {
+            "id": 138,
+            "tag": "a",
+            "label": "Steve Rogalsky",
+            "value": ""
+          },
+          {
+            "id": 139,
+            "tag": "a",
+            "label": "Amy Norris",
+            "value": ""
+          },
+          {
+            "id": 140,
+            "tag": "a",
+            "label": "Dave White",
+            "value": ""
+          },
+          {
+            "id": 141,
+            "tag": "a",
+            "label": "Borko Djurkovic",
+            "value": ""
+          },
+          {
+            "id": 142,
+            "tag": "a",
+            "label": "Session and Speaker Management powered by Sessionize.com",
+            "value": ""
+          },
+          {
+            "id": 143,
+            "tag": "a",
+            "label": "",
+            "value": ""
+          },
+          {
+            "id": 144,
+            "tag": "a",
+            "label": "",
+            "value": ""
+          },
+          {
+            "id": 145,
+            "tag": "a",
+            "label": "",
+            "value": ""
+          },
+          {
+            "id": 146,
+            "tag": "a",
+            "label": "",
+            "value": ""
+          },
+          {
+            "id": 147,
+            "tag": "a",
+            "label": "",
+            "value": ""
+          },
+          {
+            "id": 148,
+            "tag": "a",
+            "label": "",
+            "value": ""
+          },
+          {
+            "id": 149,
+            "tag": "a",
+            "label": "",
+            "value": ""
+          },
+          {
+            "id": 150,
+            "tag": "a",
+            "label": "",
+            "value": ""
+          },
+          {
+            "id": 151,
+            "tag": "a",
+            "label": "",
+            "value": ""
+          },
+          {
+            "id": 152,
+            "tag": "a",
+            "label": "",
+            "value": ""
+          },
+          {
+            "id": 153,
+            "tag": "a",
+            "label": "Purchase Tickets Online",
+            "value": ""
+          },
+          {
+            "id": 154,
+            "tag": "a",
+            "label": "Ti.to",
+            "value": ""
+          },
+          {
+            "id": 155,
+            "tag": "a",
+            "label": "Request An Invoice!",
+            "value": ""
+          },
+          {
+            "id": 156,
+            "tag": "a",
+            "label": "Email Us About Large Groups!",
+            "value": ""
+          },
+          {
+            "id": 157,
+            "tag": "a",
+            "label": "Email Us A Question!",
+            "value": ""
+          },
+          {
+            "id": 158,
+            "tag": "a",
+            "label": "Code of Conduct",
+            "value": ""
+          },
+          {
+            "id": 159,
+            "tag": "a",
+            "label": "",
+            "value": ""
+          },
+          {
+            "id": 160,
+            "tag": "a",
+            "label": "Xiaoying Riley",
+            "value": ""
+          }
+        ]
+      }
+    }
+  },
+  "result": {
+    "success": true,
+    "outcome": "completed",
+    "completionStatus": "success",
+    "steps": 3,
+    "finalObservation": {
+      "summary": "Completed (success): Found the session about execution modes for agentic workflows. Title: \"Speed vs. Accuracy: Execution Modes for Agentic Workflows\" - Speaker: Addison Rennick"
+    },
+    "totals": {
+      "wallMs": 11978,
+      "llmCalls": 3,
+      "inputTokens": 16570,
+      "outputTokens": 382,
+      "cacheReadTokens": 0
+    }
+  },
+  "writtenAt": 1788394388952
+}

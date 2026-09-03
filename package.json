@@ -1,0 +1,35 @@
+{
+  "name": "cadence-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A minimal, domain-agnostic harness for agentic AI loops (talk demo framework).",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "spike": "tsx examples/spike.ts",
+    "drill": "tsx examples/drill.ts",
+    "recover": "tsx examples/recover.ts",
+    "compare": "tsx examples/compare.ts",
+    "browse": "tsx examples/browse.ts",
+    "jam": "tsx examples/jam.ts",
+    "viz": "npm run dev -w @cadence/viz",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p packages/viz/tsconfig.json --noEmit",
+    "deps": "tsx examples/deps-check.ts",
+    "demo": "tsx examples/browse.ts --step --headed --viewport 940x820",
+    "demo:accuracy": "tsx examples/browse.ts --step --headed --viewport 940x820 --mode accuracy",
+    "demo:replay": "tsx examples/browse.ts --step --headed --viewport 940x820 --replay pinned",
+    "replay": "tsx examples/replay-check.ts",
+    "traces": "tsx examples/traces.ts",
+    "pin": "tsx examples/pin.ts",
+    "try": "tsx examples/try.ts",
+    "cachelab": "tsx examples/cache-lab.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "playwright": "^1.62.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

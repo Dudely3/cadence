@@ -1,0 +1,7 @@
+# Normalize every text file to LF in the repository *and* in the working
+# tree, on every platform. Without this, core.autocrlf (on by default in
+# Git for Windows) checks files out as CRLF here but LF on macOS/Linux,
+# so clones from the slides differ from the author's copy.
+#
+# No .bat/.cmd/.ps1 files are tracked, so nothing here needs CRLF.
+* text=auto eol=lf
