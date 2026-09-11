@@ -18,19 +18,25 @@
  *      is NOT printed on the product cards, so summing the prices you already
  *      saw gives $690.08 while the cart charges $685.08.
  *
- *      MEASURED (2026-09-10, 3 runs each): speed 3/3 and accuracy 3/3 both
- *      reported $685.08. The trap fires on nobody, and the reason is the point
- *      of the whole talk — the cart total is re-observed into EVERY request, so
- *      there is no stale number to be fooled by. You cannot catch a
- *      well-constructed context out with one. Kept because a negative result
- *      that survives three runs per mode is worth more on a slide than the
- *      gotcha it was built to be.
+ *      MEASURED (2026-09-11, 3 runs each, on the fixed step cap): speed 3/3
+ *      and accuracy 3/3 both reported $685.08. The trap fires on nobody, and
+ *      the reason is the point of the whole talk — the cart total is
+ *      re-observed into EVERY request, so there is no stale number to be fooled
+ *      by. Kept because a negative result that survives three runs per mode is
+ *      worth more than the gotcha it was built to be.
  *
- *      What it did find, by accident, is in the cost column: accuracy ran the
- *      identical goal for $0.1528 (3 turns), $0.3787 (12) and $0.3868 (12) — a
- *      2.5x spread, because a per-turn critic multiplies whatever turn count
- *      the model happens to take, and batching ten clicks into one turn or
- *      doing them one at a time is the model's choice, not ours.
+ *      What it did find is in the cost column, across every completed accuracy
+ *      run of this goal: four batched their ten clicks into 3-4 turns and cost
+ *      $0.147-$0.188; two clicked one at a time, took 12 turns, and cost $0.379
+ *      and $0.387. Nothing in the goal or the harness picks that — a per-turn
+ *      critic just multiplies whatever turn count the model lands on.
+ *
+ *      And a harness lesson worth more than either: MAX_STEPS_B used to be 12,
+ *      one turn above this task's floor, so two one-at-a-time runs ended at the
+ *      cap with a full cart and no answer. Same 10 clicks, same 3 update_plan
+ *      calls, zero tool errors as the runs that finished — the only difference
+ *      was one bookkeeping turn. A cap at the minimum measures your config, not
+ *      the mode.
  *
  * Goal B is run `--runs` times per mode, because "did it verify?" is a HIT
  * RATE, not a single result. One run proves nothing about a coin. The DEFAULT
@@ -74,6 +80,20 @@ const TRUE_TOTAL = "685.08";
 const SUBTOTAL_TRAP = "690.08";
 /** The one right answer for goal A. */
 const CHEAPEST_CAMPING = "Titanium Tent Stakes";
+
+/**
+ * Step cap for goal B, with real headroom on purpose.
+ *
+ * The floor is 11 turns if the model clicks one item at a time (10 clicks +
+ * complete), and accuracy spends further turns on update_plan bookkeeping. At
+ * 12 — which is what this was — a single update_plan that did not ride along
+ * with a click was the difference between `completed` and `max_steps`,
+ * measured: two runs finished on turn 12 and two identical ones (same 10
+ * clicks, same 3 update_plan calls, zero tool errors) ran out. A cap set at
+ * the minimum viable turn count does not measure the mode, it measures
+ * whether the model happened to batch.
+ */
+const MAX_STEPS_B = 18;
 
 const GOAL_A: Goal = {
   id: "compare-cheapest",
@@ -273,7 +293,7 @@ if (GOALS.includes("b")) {
   for (const mode of MODES) {
     for (let i = 0; i < RUNS; i++) {
       process.stdout.write(`  ${pad(`${mode} #${i + 1}`, 13)}`);
-      const out = await once(GOAL_B, mode, 12);
+      const out = await once(GOAL_B, mode, MAX_STEPS_B);
       verifyRows.push(out);
       const verdict =
         out.reported === "read"
