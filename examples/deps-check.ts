@@ -55,9 +55,27 @@ const t2ok = session.turns[2]!.toolResults.every((b) => b.type !== "tool_result"
 const criticRecorded = session.turns[1]!.critic?.ok === false;
 const tailHasCritic = (session.turns[1]!.tail ?? "").includes("[critic]");
 
+// A SUCCESSFUL update_plan must not echo the plan back. Its result is a tool
+// result, which means it freezes into the cached prefix and is re-read on every
+// later turn — while the live plan is rebuilt into the volatile tail each turn
+// anyway. It used to echo: measured on traces/sess_mtwbeeh3_3.json, that put
+// three stale snapshots of the plan in the prefix and sent 1,264 tokens that
+// bought nothing. The tell is a result carrying more than one step id.
+// (Error results stay verbose on purpose — they are rare, and a model that just
+// used a bad step id needs the real ones in front of it to recover.)
+const planEchoed = session.turns.flatMap((t) => t.toolResults).some(
+  (b) => b.type === "tool_result" && !b.isError && (b.content.match(/\bs\d+:/g) ?? []).length > 1,
+);
+const tailHasPlan = (session.turns[1]!.tail ?? "").includes("Plan progress:");
+
 console.log("blocked out-of-order done:", blocked ? "PASS" : "FAIL");
 console.log("in-order done accepted:   ", t2ok ? "PASS" : "FAIL");
 console.log("critic verdict recorded:  ", criticRecorded ? "PASS" : "FAIL");
 console.log("critic feedback in tail:  ", tailHasCritic ? "PASS" : "FAIL");
+console.log("plan progress in tail:    ", tailHasPlan ? "PASS" : "FAIL");
+console.log("plan NOT frozen in history:", planEchoed ? "FAIL" : "PASS");
 console.log("outcome:", result.outcome, result.completionStatus ?? "");
-if (!blocked || !t2ok || !criticRecorded || !tailHasCritic || result.outcome !== "completed") process.exit(1);
+if (
+  !blocked || !t2ok || !criticRecorded || !tailHasCritic || !tailHasPlan || planEchoed ||
+  result.outcome !== "completed"
+) process.exit(1);

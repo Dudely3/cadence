@@ -24,9 +24,11 @@ import type {
  *   - The PLAN text is composed into the system prompt in prepare(), before
  *     the trace freezes its statics → it rides the cached prefix, free after
  *     the first request.
- *   - Plan STATE travels as update_plan tool results, and the critic's
- *     feedback rides the volatile TAIL after the cache breakpoint — the Solo
- *     observations pattern. The frozen prefix is never touched.
+ *   - Plan STATE and the critic's feedback ride the volatile TAIL after the
+ *     cache breakpoint — the Solo observations pattern. The frozen prefix is
+ *     never touched by progress. update_plan's own result is one line for the
+ *     same reason: a tool result IS frozen prefix, so whatever it says is said
+ *     permanently, and the plan is already in the tail.
  *
  * Why accuracy is slower and costlier, visibly: one planner call up front,
  * one critic call per turn (both recorded in session.auxUsage), plus the
@@ -148,9 +150,18 @@ function updatePlanTool(): Tool<{
       }
 
       step.status = args.status;
+      // Terse ON PURPOSE. This is a TOOL RESULT, which means it freezes into the
+      // cached prefix and is re-read on every later turn — while the authoritative
+      // plan, with current statuses, is already rebuilt into the volatile tail every
+      // single turn (see tailParts below). Echoing the plan here bought nothing and
+      // cost 285 tokens a call, measured on traces/sess_mtwbeeh3_3.json: turn 5 wrote
+      // 392 tokens to cache where its neighbours wrote ~107, and by the end that run's
+      // prefix carried THREE frozen snapshots of the plan showing three different sets
+      // of statuses. Stale vintages of a document piling up in a prompt is the exact
+      // thing this talk accuses RAG chatbots of. It was in here too.
       return {
         ok: true,
-        observation: { summary: `Plan updated:\n${renderPlan(s.plan)}` },
+        observation: { summary: `Marked ${step.id} ${args.status}.` },
       };
     },
   };
