@@ -5,9 +5,20 @@ A minimal, domain-agnostic harness for agentic AI loops — the framework behind
 
 The thesis: the agent loop, the execution modes, and the observability are fixed; only the
 **Environment** and its **Tools** change. Same core drives a notepad, a browser, and a music
-engine. See [`DESIGN.md`](./DESIGN.md) for the full architecture.
+engine.
 
 > Open-source dependencies only (`@anthropic-ai/sdk`, `zod`). No proprietary code.
+
+**Where to go next.** [`DESIGN.md`](./DESIGN.md) is the architecture, and its section
+numbers are cited from the source comments. [`CLAUDE.md`](./CLAUDE.md) is the working
+contract — the invariants and the checks — and it is what to hand a coding agent.
+[`EXERCISES.md`](./EXERCISES.md) is how to learn the harness by breaking it.
+
+**The 60-second version**, free and needing no API key:
+
+```bash
+npm install && npm run check
+```
 
 ## Layout
 
@@ -36,17 +47,32 @@ examples/
   format-lab.ts  measures cost of context format (and whether the model cares)
   ladder.ts      the 4-rung context ladder (naive → explore), with a cart check
   slides-check.ts  free check that every slide binding still resolves
+  env.ts     loads .env (imported first by every live example)
   site/bigshop.html  255-product catalogue — big, local, deterministic
 slides/
   *.md       the talk, one file per slide; frontmatter binds recordings + a run
   pins.json  what live runs bound to a slide (written by the viewer)
-  env.ts     loads .env (imported first by every live example)
+traces/      recorded runs — replay artifacts, and the offline stage fallback
 ```
 
 ## Setup
 
+Needs **Node 20.12 or newer** — `examples/env.ts` uses `process.loadEnvFile`.
+
 ```bash
 npm install
+```
+
+That is everything the free checks need. The browser demos additionally need a
+Chromium build, which npm does not install for you:
+
+```bash
+npm run setup
+```
+
+For live model runs, add a key:
+
+```bash
 cp .env.example .env   # then put your ANTHROPIC_API_KEY in it
 ```
 
@@ -60,20 +86,17 @@ ANTHROPIC_WORKSPACE_ID=<id from Console → Settings → Workspaces>
 Shell values win over `.env`, so a one-off `ANTHROPIC_API_KEY=… npm run browse` still
 overrides. Replay and scripted runs need no key at all.
 
-Type-check the whole workspace, and run the free deterministic checks (no API key, no
-cost — they use a scripted model):
+## The free checks
+
+One command type-checks the workspace and runs every deterministic check. No API key,
+no network, no cost — they drive a scripted model:
 
 ```bash
-npm run typecheck
+npm run check
 ```
 
-```bash
-npm run deps && npm run replay && npm run drill
-```
-
-```bash
-npm run slides
-```
+That is `typecheck`, `deps`, `replay`, `drill` and `slides`, and each runs on its own too.
+CI runs exactly this on Node 20 and 22.
 
 `deps` covers plan dependency enforcement, `replay` covers replay fidelity (including
 mode-owned tools like `update_plan`), `drill` runs the resilience scenarios, and

@@ -1,0 +1,33 @@
+# The free checks, on every push and PR.
+#
+# All five run against a scripted model client — no ANTHROPIC_API_KEY, no
+# network, no cost — which is the point: a fork can prove the harness works
+# before it ever spends a cent. The paid measurements (ladder, cachelab,
+# formatlab, floor) are deliberately NOT here; they exist to measure claims,
+# and a number that changes 10-20% between runs is not a pass/fail signal.
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 20.12 is the floor: examples/env.ts uses process.loadEnvFile.
+        node: ["20.x", "22.x"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      # No check drives a browser, so don't pay for the Chromium download.
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      - run: npm run check

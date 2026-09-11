@@ -8,19 +8,23 @@
     "packages/*"
   ],
   "scripts": {
-    "spike": "tsx examples/spike.ts",
+    "setup": "playwright install chromium",
+    "check": "npm run typecheck && npm run deps && npm run replay && npm run drill && npm run slides",
+    "test": "npm run check",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p packages/viz/tsconfig.json --noEmit",
+    "deps": "tsx examples/deps-check.ts",
+    "replay": "tsx examples/replay-check.ts",
     "drill": "tsx examples/drill.ts",
+    "slides": "tsx examples/slides-check.ts",
+    "spike": "tsx examples/spike.ts",
     "recover": "tsx examples/recover.ts",
     "compare": "tsx examples/compare.ts",
     "browse": "tsx examples/browse.ts",
     "jam": "tsx examples/jam.ts",
     "viz": "npm run dev -w @cadence/viz",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p packages/viz/tsconfig.json --noEmit",
-    "deps": "tsx examples/deps-check.ts",
     "demo": "tsx examples/browse.ts --step --headed --viewport 940x820",
     "demo:accuracy": "tsx examples/browse.ts --step --headed --viewport 940x820 --mode accuracy",
     "demo:replay": "tsx examples/browse.ts --step --headed --viewport 940x820 --replay pinned",
-    "replay": "tsx examples/replay-check.ts",
     "traces": "tsx examples/traces.ts",
     "pin": "tsx examples/pin.ts",
     "try": "tsx examples/try.ts",
@@ -28,7 +32,6 @@
     "formatlab": "tsx examples/format-lab.ts",
     "ladder": "tsx examples/ladder.ts",
     "ladder:web": "tsx examples/ladder.ts --scenario pdc",
-    "slides": "tsx examples/slides-check.ts",
     "ladder:rung": "tsx examples/ladder.ts --step --headed --rung",
     "floor": "tsx examples/floor-check.ts",
     "rerun": "tsx examples/rerun.ts"
@@ -38,5 +41,8 @@
     "playwright": "^1.62.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20.12"
   }
 }
