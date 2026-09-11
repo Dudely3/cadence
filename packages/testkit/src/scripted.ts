@@ -15,8 +15,8 @@ import type {
  *   2. Make the loop testable at all (deterministic tool-use ids, zero tokens).
  *   3. It is structurally most of ReplayMode — a decide() that reads a recorded
  *      script instead of asking a model, with a live fallback once the script
- *      runs out (DESIGN.md §6 warm-start). Build this, and Phase 4 is mostly a
- *      question of where the script comes from.
+ *      runs out (DESIGN.md §6 warm-start). ReplayMode is that same shape with
+ *      the script read off a recorded Session instead of written by hand.
  */
 
 export interface ScriptedCall {

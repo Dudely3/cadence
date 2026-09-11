@@ -13,10 +13,16 @@ import type {
  * implements. The loop cannot tell the difference; that's the thesis.
  *
  * Observation model: each snapshot tags every visible interactive element with
- * a data-cad-id and lists them as [id] <tag> label. Tools act by element id,
- * and every tool result carries a FRESH snapshot, so the model always holds
- * current ids (the loop never re-observes on its own — state rides tool
- * results, PLAN.md open-question resolved in favor of tool-results-carry-state).
+ * a data-cad-id and lists them as [id] <tag> label, and tools act by element id.
+ * The loop calls observe() fresh at the top of every turn and the mode renders
+ * that into the volatile tail, so the ids the model is holding are always this
+ * turn's. Tool results stay BRIEF — "Clicked [2] button · Add X to cart" — and
+ * deliberately do not repeat the page: a tool result freezes into the cached
+ * prefix and is re-read on every later turn, so a snapshot returned here would
+ * be a stale copy of the page, permanently, once per action taken.
+ *
+ * That is why element ids are positional handles rather than stable names, and
+ * why the operating guide tells the model to re-read them every pass.
  *
  * argSources: element-id args are reported as {kind:"dom", selector:"<tag>|<label>"}
  * — the tool knows its arg was a handle into a page that can shift. On replay,

@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { Environment, Observation, Tool } from "@cadence/core";
 
 /**
- * A trivial in-memory environment for the Phase 0 spike: a shared text notepad.
+ * A trivial in-memory environment: a shared text notepad. The original spike.
  * Proves the full perceive → decide → act → observe loop with real tool use and
  * zero external dependencies. Swapping this for BrowserEnv / StrudelEnv later
  * changes nothing in the loop — that's the thesis.

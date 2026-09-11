@@ -39,17 +39,17 @@ export class SimulatedEnvError extends Error {
 }
 
 export type ModelFault =
-  /** HTTP 429. Unhandled today: propagates out of run() and kills the process. */
+  /** HTTP 429. Absorbed only if the client is wrapped in resilient(); bare, it ends the run. */
   | "rateLimit"
   /** HTTP 529 overloaded. Same path as rateLimit, different status. */
   | "overloaded"
-  /** No response, no error, no timeout configured. The worst one to hit live. */
+  /** No response. Needs withTimeout to become an error at all — the worst one to hit live. */
   | "hang"
-  /** Model names a tool that does not exist. agent.ts:76 handles this — verify it recovers. */
+  /** Model names a tool that does not exist. The loop returns an error tool_result — verify it recovers. */
   | "unknownTool"
-  /** Model calls a real tool with junk args. agent.ts:86 handles this — verify it recovers. */
+  /** Model calls a real tool with junk args. Schema rejects them into an error tool_result. */
   | "invalidArgs"
-  /** Text with no tool calls. Triggers the optimistic success path at agent.ts:65. */
+  /** Text with no tool calls. The model gave up: outcome `stopped`, and NOT success. */
   | "bareText";
 
 export interface ModelChaosSpec {
@@ -63,7 +63,8 @@ export interface ModelChaosSpec {
 export type EnvFault =
   /** observe() throws. Page crashed, or the WebAudio context got suspended. */
   | "throwOnObserve"
-  /** A tool's execute() throws. agent.ts:98 is unguarded — this ends the run. */
+  /** A tool's execute() throws, as Playwright does on every timeout. The loop
+   *  converts it to an error tool_result and hands it back to the model. */
   | "throwOnExecute";
 
 export interface EnvChaosSpec {
@@ -157,10 +158,11 @@ export function chaos(inner: ModelClient, spec: ModelChaosSpec): ModelClient {
 /**
  * Wrap an Environment so it fails in a chosen way at a chosen call.
  *
- * Note on `throwOnObserve`: the loop calls env.observe() exactly ONCE, before
- * the first turn (agent.ts:37) — it never re-observes, relying on tool results
- * to carry new state instead. So `at: 0` is the only observe fault that fires.
- * That divergence from DESIGN.md §4 is worth a decision, not just a workaround.
+ * Note on `throwOnObserve`: the loop observes once before the first turn and
+ * again at the top of every turn after it, so observe-call N lines up with turn
+ * N. `at: 0` is the one that fires before any model call — a dead environment,
+ * which must end the run cleanly rather than crash the host. A later `at:` is
+ * the more interesting fault: a page that dies mid-run, after real work.
  */
 export function chaosEnv(inner: Environment, spec: EnvChaosSpec): Environment {
   let observeN = -1;

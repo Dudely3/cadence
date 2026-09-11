@@ -11,8 +11,8 @@ export interface SessionContext {
 }
 
 /**
- * Accumulates the Session. The serialized Session IS the replay artifact
- * (PLAN.md) — logging is the foundation, not an afterthought.
+ * Accumulates the Session. The serialized Session IS the replay artifact —
+ * logging is the foundation here, not an afterthought.
  */
 export interface Tracer {
   start(goal: Goal, mode: string): Session;

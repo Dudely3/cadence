@@ -31,7 +31,7 @@ When the goal is fully accomplished, call the complete tool with an appropriate 
 /**
  * Compose a system prompt: base + operating guide + optional mode preamble +
  * environment hint. A library function modes call from their system() hook —
- * the loop never composes a prompt itself (PLAN.md, settled decision #2).
+ * the loop never composes a prompt itself.
  *
  * Order is deliberate: the two constants first, then the parts that vary by
  * goal, mode and environment. The whole system block sits inside one cache

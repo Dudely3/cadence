@@ -7,7 +7,7 @@ import type { Session } from "./turn";
 /**
  * The speed/accuracy/replay knob — a POLICY object, not a config bag.
  *
- * Division of labor (PLAN.md, settled decision #2):
+ * Division of labor:
  *   - The LOOP owns turn bookkeeping: observe, validate, execute, trace,
  *     outcome semantics, the step budget.
  *   - The MODE owns the decision: how the next action is produced. Live modes
@@ -18,7 +18,7 @@ import type { Session } from "./turn";
  * Model tier, token budget, thinking, and effort are implementation details of
  * a mode's decide(), invisible to the loop and to this interface.
  *
- * Retry is not an interface concern either (settled decision #4): a failed
+ * Retry is not an interface concern either: a failed
  * tool call comes back to the model as an observation, and how many
  * consecutive failures a mode tolerates before steering toward
  * completion-with-failure is private policy, kept in ctx.scratch.

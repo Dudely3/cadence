@@ -48,8 +48,9 @@ export interface ActionResult {
 }
 
 /**
- * Provenance for a captured arg, so replay (Phase 4) knows what to re-resolve
- * vs. reuse literally. See DESIGN.md §6.
+ * Provenance for a captured arg, so replay knows what to re-resolve against the
+ * live world vs. reuse literally. Populated by TOOLS (BrowserEnv's element-id
+ * args are the main producer) and consumed by replayMode. See DESIGN.md §6.
  */
 export type ArgSource =
   | { kind: "literal" }

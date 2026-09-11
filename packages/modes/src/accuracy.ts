@@ -19,8 +19,7 @@ import type {
 /**
  * Accuracy mode: Opus, plan-first, per-step critic, failure budget.
  *
- * Where each piece lives is the talk's context-anatomy story told twice
- * (PLAN.md, settled decision #3):
+ * Where each piece lives is the talk's context-anatomy story told twice:
  *   - The PLAN text is composed into the system prompt in prepare(), before
  *     the trace freezes its statics → it rides the cached prefix, free after
  *     the first request.

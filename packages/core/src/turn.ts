@@ -9,7 +9,7 @@ export interface Action {
   id: string;
   tool: string;
   args: Record<string, unknown>;
-  /** Which args re-resolve on replay, and how (Phase 4). */
+  /** Which args re-resolve on replay, and how. See ArgSource. */
   argSources?: Record<string, ArgSource>;
   result?: ActionResult;
 }

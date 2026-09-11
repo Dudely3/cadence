@@ -25,7 +25,7 @@ export interface AgentConfig {
    * replay can be re-pointed at different ones. See Session.params.
    */
   params?: Record<string, string>;
-  /** Optional observer for the live dashboard (Phase 6). */
+  /** Optional observer for a live renderer — the terminal examples and the viz. */
   onEvent?: (event: AgentEvent) => void;
 }
 

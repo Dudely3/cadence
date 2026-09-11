@@ -1,5 +1,5 @@
 /**
- * Phase 0 spike: drive the bare loop against the notepad environment in speed
+ * The spike: drive the bare loop against the notepad environment in speed
  * mode. Requires ANTHROPIC_API_KEY in the environment (or a .env you've loaded).
  *
  *   npm run spike

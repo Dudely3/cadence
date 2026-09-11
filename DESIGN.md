@@ -1,112 +1,136 @@
-# Cadence — Architecture Design
-
-> Working name: **Cadence** (rhythm for the music demo; pacing/timing for the speed-vs-accuracy thesis). Rename freely.
+# Cadence — Architecture
 
 A minimal, domain-agnostic harness for agentic AI loops. Built to back the talk
 **"Speed vs. Accuracy: Execution Modes for Agentic Workflows."**
+
+This document describes the harness **as it is**, and its section numbers are
+referenced from the source comments. For how to run it, see
+[`README.md`](./README.md); for the rules to work within, see
+[`CLAUDE.md`](./CLAUDE.md).
+
+> **Dependency policy:** open-source / publicly available packages only
+> (`@anthropic-ai/sdk`, `zod`, `zod-to-json-schema`, Playwright, React, Vite).
+> No code is shared with any proprietary system. The `Session/Turn/Action` model
+> below is a clean-room implementation of a general agent pattern.
 
 ---
 
 ## 1. Thesis
 
-A good agent harness is **domain-agnostic**: the loop, the execution modes, and the
-observability are fixed; only the **Environment** and its **Tools** change.
+A good agent harness is **domain-agnostic**: the loop, the execution modes, and
+the observability are fixed; only the **Environment** and its **Tools** change.
 
-We prove this by driving two completely different worlds through the *same* core:
+Three environments drive the same core, and the loop cannot tell them apart:
 
-1. A **browser** (objective success: did the task complete?)
-2. A **Strudel** live-coding music engine (subjective success: does it sound good?)
+1. A **notepad** (`env-notepad`) — trivial, in-memory, no dependencies.
+2. A **browser** (`env-browser`) — Playwright. Objective success: is the right
+   thing in the cart?
+3. A **Strudel** live-coding music engine (`env-strudel`) — subjective success:
+   the critic checks structural rules, because nothing in the loop can hear.
 
-The same goal can be run under three **execution modes** — Speed, Accuracy, Replay —
-and the tradeoff is made *visible and measurable* (wall-clock, LLM calls, tokens/cost,
-success). That comparison is the centerpiece of the talk.
+The same goal runs under different **execution modes**, and the tradeoff is made
+measurable — wall-clock, LLM calls, tokens, cost, and whether the goal was
+*actually* met. That comparison (`npm run compare`) and the context ladder
+(`npm run ladder`) are the centrepieces.
 
 ---
 
-> **Dependency policy:** Cadence uses only open-source / publicly available packages
-> (`@anthropic-ai/sdk`, `zod`, Playwright, Strudel, etc.). It shares **no code** with any
-> proprietary/internal system. The `Session/Turn/Action` model below is a clean-room
-> reimplementation of a general agent pattern, not a port of any internal codebase.
-
 ## 2. Design principles
 
-- **The loop never changes.** Modes and environments are injected, not branched into.
-- **Logging is the foundation, not a feature.** The trace you collect to debug is the
-  exact artifact Replay mode consumes. Build it first; it pays off as a whole mode later.
-- **Tools are typed.** Every tool has a schema; the model only ever emits validated calls.
-- **Observation is explicit.** The agent perceives the environment through one method;
-  no hidden global state leaks into the prompt.
-- **Everything is streamable.** Each loop event is emitted so a dashboard can render
-  `thought → tool call → observation` live.
+- **The loop never changes.** Modes and environments are injected, never
+  branched into. `agent.ts` contains no `if (mode === …)` anywhere.
+- **The loop never builds a prompt.** Composing the request is the mode's job.
+  This is not style: replay produces decisions without a prompt existing at all,
+  so a loop that pre-built a request would make replay a special case.
+- **There is exactly one message builder.** `buildMessages()` renders a Session
+  into a request, and the viewer calls that same function to draw it. A second
+  renderer drifts, and the first symptom is a block that was sent but not drawn.
+- **The trace is the context.** A `Session` is a complete account of what the
+  model saw: system prompt, tool schemas, initial observation, every frozen
+  turn, and the volatile content of each. What goes on the wire and what lands
+  in the file are the same bytes by construction.
+- **Logging is the foundation, not a feature.** The trace you collect to debug
+  *is* the artifact replay consumes.
+- **Tools are typed.** Every tool carries a zod schema; args are validated
+  before execution, and a rejection goes back to the model as an observation.
+- **Failures are observations.** An unknown tool, invalid args, or a throwing
+  tool all become an error `tool_result`. Only transport failures (retry,
+  timeout) are handled outside the model's view, as `ModelClient` decorators.
+- **Everything is streamable.** Each loop event is emitted so a renderer can
+  show `thought → tool call → observation` live.
 
 ---
 
 ## 3. Core abstractions
 
-TypeScript. Interfaces first; implementations are swappable.
+TypeScript, in `packages/core`. Interfaces first; implementations are swappable.
 
 ### 3.1 Goal & context
 
 ```ts
 interface Goal {
   id: string;
-  description: string;        // natural-language objective
-  successCriteria?: string;   // optional, used by the verify step
+  description: string;                      // natural-language objective
+  successCriteria?: string;                 // folded into the system prompt
+  completionStatuses?: CompletionStatus[];  // default: success / failure
 }
 
 interface RunContext {
   goal: Goal;
   step: number;
-  history: TraceEvent[];      // prior steps this run
-  plan?: PlanStep[];          // produced by Accuracy mode's plan phase
-  scratch: Record<string, unknown>; // mode-private state
+  scratch: Record<string, unknown>;         // mode-private state
 }
 ```
 
-### 3.2 Observation & Action
+There is no `history` on `RunContext`. History lives in exactly one place —
+`session.turns` — and modes read it from there.
+
+### 3.2 Observation, Action, ActionResult
 
 ```ts
-// What the agent perceives each turn. Environment-specific payload.
 interface Observation {
-  summary: string;            // model-facing description of current state
-  raw: unknown;               // structured detail (DOM snapshot, pattern AST, …)
-}
-
-// What the agent decides to do. An Action is always a validated tool call.
-interface Action {
-  tool: string;
-  args: Record<string, unknown>;
-  _meta?: ActionMeta;         // provenance for replay (see §6)
-}
-
-interface Decision {
-  done: boolean;              // agent believes goal is met
-  action?: Action;            // present unless done
-  thought?: string;           // model rationale, for the dashboard
+  summary: string;   // model-facing description of current state
+  raw?: unknown;     // structured detail, never sent to the model
 }
 
 interface ActionResult {
   ok: boolean;
-  observation: Observation;   // post-action state
+  observation: Observation;
   error?: string;
+  done?: boolean;                           // the run is over
+  completionStatus?: string;                // which status it ended with
+  argSources?: Record<string, ArgSource>;   // provenance, for replay (§6)
 }
 ```
+
+**Completion is a status, not a boolean.** The core `complete` tool (§3.3) takes
+a value from an enumerated set, and that status is data a workflow layer could
+branch on. `RunResult.success` is true only when the run `completed` *and* the
+declared status maps to success.
 
 ### 3.3 Tool & registry
 
 ```ts
-interface Tool<A = any> {
+interface Tool<A> {
   name: string;
   description: string;
-  schema: ZodSchema<A>;       // validates args before execution
+  schema: ZodType<A>;                        // validated before execute runs
   execute(env: Environment, args: A, ctx: RunContext): Promise<ActionResult>;
 }
 
-interface ToolRegistry {
+class ToolRegistry {
+  register(tool: Tool): void;     // modes add their own in prepare()
   list(): Tool[];
   get(name: string): Tool | undefined;
-  toModelSchema(): ToolDefinition[]; // serialize to Anthropic tool-use format
+  toModelSchema(): ToolDef[];     // zod → JSON Schema, via zod-to-json-schema
 }
+```
+
+Environments do **not** define a terminator. `completionTool(goal)` comes from
+core and is registered alongside the environment's tools:
+
+```ts
+new ToolRegistry([...env.availableTools(), completionTool(goal)])
 ```
 
 ### 3.4 Environment — *the key abstraction*
@@ -115,336 +139,441 @@ interface ToolRegistry {
 interface Environment {
   name: string;
   observe(): Promise<Observation>;
-  availableTools(): Tool[];        // tools valid in this world
-  reset(): Promise<void>;
-  dispose(): Promise<void>;
+  availableTools(): Tool[];
+  systemHint?(): string;                            // appended to the system prompt
+  resolveArg?(source: ArgSource): Promise<unknown>; // replay re-resolution (§6)
+  reset?(): Promise<void>;
+  dispose?(): Promise<void>;
 }
 ```
 
-`BrowserEnv` and `StrudelEnv` both implement this. **Swapping them is the demo that
-proves the thesis.**
+`NotepadEnv`, `BrowserEnv`, and `StrudelEnv` all implement this. **Swapping them
+is the demo that proves the thesis.**
 
 ### 3.5 Model client
 
 ```ts
+interface ModelRequest {
+  system?: string;
+  messages: Message[];        // neutral content-block union, not provider types
+  tools: ToolDef[];
+  model: string;
+  maxTokens: number;
+  thinking?: "adaptive";
+  effort?: Effort;            // omit on Haiku — unsupported, would 400
+  toolChoice?: ToolChoice;
+}
+
 interface ModelClient {
-  // Single decision turn: given context + tools, return a tool call or "done".
-  decide(input: {
-    system: string;
-    context: RunContext;
-    observation: Observation;
-    tools: ToolDefinition[];
-    model: string;            // e.g. claude-haiku-4-5 vs claude-opus-4-8
-  }): Promise<Decision>;
+  decide(req: ModelRequest): Promise<ModelResult>;
 }
 ```
 
-> Model details (exact IDs, tool-use payload shape, prompt caching) get locked down
-> against the current Claude API when we build §Phase 1 — not pinned here.
+`@cadence/model-anthropic` is the only provider-aware code in the harness; it
+translates the neutral shapes to and from the Messages API. `@cadence/testkit`
+supplies a scripted client so the loop runs free and deterministically.
+
+Transport concerns are **decorators**, not loop code:
+`resilient(client)` is `withRetry(withTimeout(client))`, retrying 408/409/429/5xx
+and timeouts with exponential backoff and jitter.
 
 ### 3.6 Execution mode — *the speed/accuracy knob*
 
-The loop is fixed; the **mode** supplies policy. All hooks optional except `decide`.
+A **policy object**, not a config bag.
 
 ```ts
 interface ExecutionMode {
-  name: "speed" | "accuracy" | "replay";
-  model: string;                       // which Claude tier
+  name: string;
   maxSteps: number;
 
-  // Optional up-front planning (Accuracy uses it; Speed skips it).
-  plan?(ctx: RunContext, obs: Observation): Promise<PlanStep[]>;
+  /** One-time setup before the first turn. May register mode-owned tools and
+   *  make aux model calls; runs before the trace freezes its static parts. */
+  prepare?(input: ModeDeps & { observation; session }): Promise<void>;
 
-  // How to get the next action. Replay consults the cache here first.
-  decide(ctx: RunContext, obs: Observation): Promise<Decision>;
+  /** Compose the system prompt. Called once, recorded onto the Session. */
+  system(input: { goal; env; ctx }): string;
 
-  // Optional critic after each action. Returns pass/fail + feedback.
-  verify?(ctx: RunContext, action: Action, result: ActionResult): Promise<Verdict>;
+  /** Compose this turn's volatile content WITHOUT calling the model. Must be
+   *  idempotent — decide() asks for the same thing immediately afterwards. */
+  composeTurn?(input: DecideInput): Promise<PendingRequest>;
 
-  // What to do on a failed verify or tool error.
-  retry: RetryPolicy;                  // none | fixed(n) | untilVerified(max)
+  /** Produce this turn's decision — the model call, or the trace read. */
+  decide(input: DecideInput): Promise<ModelResult>;
 }
-
-interface Verdict { ok: boolean; feedback?: string; }
 ```
+
+Model tier, token budget, thinking and effort are private to a mode's
+`decide()` — invisible to the loop and absent from this interface.
+
+**There are deliberately no `verify` or `retry` hooks.** A failed tool call is
+an observation the model reads. How many consecutive failures a mode tolerates
+before steering toward completion-with-failure is private policy in
+`ctx.scratch`. Accuracy's critic lives inside its `composeTurn()`, not as a loop
+hook — which is why adding a critic did not change `agent.ts`.
+
+**Why `composeTurn` is separate from `decide`.** A stepped run pauses *before*
+the model call, and at that pause the whole request should be on screen. The
+loop calls `composeTurn()`, records what it returns onto the open turn, and
+flushes the trace — then pauses. Without that split you find out what you were
+about to send by sending it.
 
 ### 3.7 Session / Turn / Action — *the unit of both replay and caching*
 
-The run is modelled as a three-level hierarchy. This single structure is what makes
-**replay** and **incremental prompt-caching** fall out of the same abstraction.
-
 ```ts
-// One full run toward a Goal.
+interface Action {
+  id: string;                                 // stable: replay matches by identity
+  tool: string;
+  args: Record<string, unknown>;
+  argSources?: Record<string, ArgSource>;     // which args re-resolve (§6)
+  result?: ActionResult;
+}
+
+interface Turn {
+  index: number;
+  thought?: string;
+  actions: Action[];
+  assistantBlocks: ContentBlock[];   // the model's response, neutral form
+  toolResults: ContentBlock[];       // what executing this turn's actions produced
+  closed: boolean;                   // FROZEN — its bytes never change again
+  cacheable: boolean;                // set on close
+  tail?: string;                     // volatile content sent AFTER the breakpoint
+  stateAt?: string;                  // full state frozen into history (freezeState only)
+  critic?: { ok: boolean; feedback?: string };
+  usage?: Usage;
+  timing: { startedMs: number; durationMs: number };
+  compacted?: { summary: string };   // declared; not yet read by buildMessages
+}
+
 interface Session {
   id: string;
   goal: Goal;
   mode: string;
   turns: Turn[];
-}
-
-// One model round-trip: the model is invoked, returns a thought + 1..n tool calls,
-// those execute into results. Maps 1:1 to an (assistant message, tool_result message)
-// pair in the Messages API. A Turn is FROZEN once closed — its bytes never change.
-interface Turn {
-  index: number;
-  thought?: string;
-  actions: Action[];               // 1..n tool calls decided this turn
-  closed: boolean;
-  cacheable: boolean;              // eligible to anchor a cache breakpoint (set on close)
-  compacted?: { summary: string }; // optional: replaces bulky tool results in LIVE context
-  usage?: { model: string; inputTokens: number; outputTokens: number;
-            cacheReadTokens?: number; cacheWriteTokens?: number };
-  timing: { startedMs: number; durationMs: number };
-}
-
-// A single tool call within a Turn. `id` is stable so replay can match by identity.
-interface Action {
-  id: string;
-  tool: string;
-  args: Record<string, unknown>;
-  argSources?: Record<string, ArgSource>; // which args re-resolve on replay (see §6)
-  result?: ActionResult;
+  system?: string;                    // rendered system prompt
+  tools?: ToolDef[];                  // the schemas sent with every request
+  initialObservation?: Observation;
+  contextShape?: ContextShape;        // request layout, as DATA (§6.1)
+  presentation?: SessionPresentation; // drawing hints for AUTHORED traces only
+  params?: Record<string, string>;    // what this run was ABOUT, by name (§6)
+  auxUsage?: Usage[];                 // planner / critic calls, outside the loop
+  startedMs: number;
 }
 ```
 
 **Why Turn is the right grain:**
 
-- *Replay* (§6) walks `session.turns` in order, re-resolving `argSources` against the live
-  environment. Turn granularity also enables **warm-start**: replay turns `0..N`, then hand
-  off to the live model from turn `N+1`.
-- *Caching* (§6.1): because a closed Turn is immutable, the serialized prefix `turns[0..k]`
-  is byte-stable, so it's a reliable `cache_control` segment.
-- *Long-turn efficiency*: a turn with huge tool results can be **compacted** to a summary in
-  the live context once closed, while the full content stays in the trace for faithful replay.
+- *Replay* (§6) walks `session.turns` in order, re-resolving `argSources`
+  against the live environment. Turn granularity also enables **warm-start**:
+  replay turns `0..N`, then hand off to a live mode from `N+1`.
+- *Caching* (§6.1): a closed Turn is immutable, so the serialized prefix
+  `turns[0..k]` is byte-stable — a reliable `cache_control` segment.
+- *Rendering*: the viewer draws the exact request for any turn N by calling
+  `buildMessages()` over `{...session, turns: turns.slice(0, N)}`. One renderer.
 
-### 3.8 Tracer / logger
+`compacted` is declared and not yet consumed — the shape is reserved, the
+behaviour is not implemented. Nothing reads it today.
 
-The Tracer accumulates the `Session`; the serialized Session **is** the replay artifact.
+### 3.8 Tracer
 
 ```ts
 interface Tracer {
   start(goal: Goal, mode: string): Session;
-  openTurn(): Turn;                 // begins a turn (assistant about to be called)
-  closeTurn(turn: Turn): void;      // freezes it, marks cacheable, records usage/timing
-  finish(result: RunResult): Session;
+  recordContext?(ctx: SessionContext): void;  // system, tools, initial observation
+  openTurn(): Turn;
+  flush?(): void;                             // persist mid-turn (stepped runs)
+  closeTurn(turn: Turn): void;                // freeze, mark cacheable, time it
+  finish(outcome, finalObservation, extra?): RunResult;
 }
 ```
+
+`InMemoryTracer` accumulates. `FileTracer` extends it and writes
+`traces/live.json` on every state change (what the viewer tails) plus
+`traces/<sessionId>.json` at the end (the durable replay artifact). Writes go
+through a temp file and a rename, so a tailing reader never sees a torn file.
 
 ---
 
 ## 4. The loop (fixed)
 
+`packages/core/src/agent.ts`, in order:
+
+1. `tracer.start()`, and record `session.params` if the caller named any.
+2. `env.observe()` — **guarded**. A dead environment ends the run with outcome
+   `error` rather than crashing the host.
+3. `mode.prepare?()` — may register mode-owned tools and make aux model calls.
+4. `mode.system()`, then `tools.toModelSchema()` — in that order, so tools
+   registered during `prepare()` appear in the schema list.
+5. `tracer.recordContext()` — the static parts are now frozen into the trace.
+6. For each step up to `mode.maxSteps`:
+   - `env.observe()` again (from turn 1 on), also guarded. **The loop
+     re-observes every turn**: the state a mode renders into its tail is
+     current, not last turn's leftovers.
+   - `tracer.openTurn()`.
+   - `mode.composeTurn?()` → record `tail` / `stateAt` / `critic` onto the turn,
+     then `tracer.flush()`. This is the write a stepped pause displays.
+   - `mode.decide()` → thought, assistant blocks, tool uses, usage.
+   - **No tool calls → outcome `stopped`.** The model stopped talking, which is
+     not the same thing as the goal being met.
+   - For each tool use: look it up (unknown → error result), `safeParse` the
+     args (invalid → error result), `execute` inside a try/catch (a throw →
+     error result). All three paths produce a `tool_result` the model reads.
+   - `tracer.closeTurn()`.
+   - An action setting `done` → outcome `completed`. **This is the only route
+     to success.**
+7. `tracer.finish()`.
+
+The only thing that differs between modes is which `mode` object is passed in.
+
+### Outcomes
+
 ```ts
-async function run(agent: {
-  goal: Goal; env: Environment; tools: ToolRegistry;
-  model: ModelClient; mode: ExecutionMode; tracer: Tracer;
-}): Promise<RunResult> {
-  const run = agent.tracer.start(agent.goal, agent.mode.name);
-  const ctx: RunContext = { goal: agent.goal, step: 0, history: [], scratch: {} };
-
-  ctx.plan = await agent.mode.plan?.(ctx, await agent.env.observe());
-
-  for (; ctx.step < agent.mode.maxSteps; ctx.step++) {
-    const obs = await agent.env.observe();
-    const decision = await agent.mode.decide(ctx, obs);   // ← model OR cache
-    if (decision.done) break;
-
-    const tool = agent.tools.get(decision.action!.tool)!;
-    const args = tool.schema.parse(decision.action!.args); // validate
-    let result = await tool.execute(agent.env, args, ctx);
-
-    let verdict: Verdict | undefined;
-    if (agent.mode.verify) {
-      verdict = await agent.mode.verify(ctx, decision.action!, result);
-      if (!verdict.ok) result = await applyRetry(agent, ctx, decision, verdict);
-    }
-
-    const event = buildEvent(ctx, decision, result, verdict);
-    run.record(event);
-    ctx.history.push(event);
-  }
-  return run.finish(/* … */);
-}
+type RunOutcome = "completed" | "stopped" | "max_steps" | "error";
 ```
 
-The only thing that differs between Speed, Accuracy, and Replay is which `mode`
-object is passed in. That's the whole point.
+`success` requires `completed` **and** a success-mapped completion status. A run
+that goes quiet reports `stopped`. This matters because Success is a column
+projected onto a wall.
 
 ---
 
-## 5. The three modes
+## 5. The modes
 
-| Mode | Model | `plan` | `verify` | maxSteps | Trades |
-|------|-------|--------|----------|----------|--------|
-| **Speed** | `claude-haiku-4-5` | ✗ | ✗ | low | latency/cost ↓, error rate ↑ |
-| **Accuracy** | `claude-opus-4-8` | ✓ | ✓ (critic each step) | high | correctness ↑, slow + costly |
-| **Replay** | none / cheap fallback | ✗ | ✗ | from trace | deterministic + ~instant, known goals only |
+`packages/modes`. All four satisfy §3.6 and none of them touch `agent.ts`.
 
-- **Speed:** one model call per step, optimistic, no critic. Fastest path to "probably right."
-- **Accuracy:** plans first, then runs the loop, running an LLM critic after each action and
-  retrying with feedback until verified or budget exhausted. Slowest, most reliable.
-- **Replay:** see §6.
+| Mode | Model | Plan | Critic | Shape | Trades |
+|------|-------|------|--------|-------|--------|
+| **speed** | `claude-haiku-4-5` | ✗ | ✗ | volatile tail | latency/cost ↓, error rate ↑ |
+| **accuracy** | `claude-opus-4-8` | ✓ | ✓ per turn | tail + plan + verdict | correctness ↑, slow and costly |
+| **replay** | none | ✗ | ✗ | no prompt at all | deterministic, instant, free |
+| **naive** | `claude-haiku-4-5` | ✗ | ✗ | state frozen into history | *deliberately wrong* — rung 1 |
+
+- **speed** — one model call per turn. Current state rides the volatile tail,
+  replaced every turn. No `thinking`, no `effort` (Haiku rejects `effort`).
+- **accuracy** — plans once in `prepare()` and bakes the plan text into the
+  system prompt, so it rides the cached prefix. Registers its own `update_plan`
+  tool. Runs a critic on the previous turn inside `composeTurn()`, and puts the
+  verdict, live plan progress, and failure-budget steering in the tail. Planner
+  and critic usage lands in `session.auxUsage` so the money table is honest.
+  Both aux calls use a forced `tool_choice` for structured output.
+- **replay** — §6.
+- **naive** — a chatbot loop pressed into service as an agent. Freezes the whole
+  observation into history every turn and anchors the breakpoint at the very
+  end. It is here to be **measured against**, not shipped.
+
+`stepped(mode)` in `examples/step.ts` wraps any mode with a presenter gate.
+It forwards `prepare`, `system`, and `composeTurn`, and keeps the inner mode's
+`name` — so a stepped recording replays exactly like an unattended one.
 
 ---
 
-## 6. Replay & tracing (the depth beat)
+## 6. Replay & tracing
 
-**Narrative:** logging isn't observability theater — the `Session` you serialize *is* the
-replay program.
-
-A trace is a serialized `Session` (§3.7) — an ordered list of `Turn`s, each holding its
-`Action`s. Replay walks turns by index and re-resolves each action's args:
+**The `Session` you serialize is the replay program.** Replay walks the
+recorded turns in order and re-issues their tool calls, never building a prompt
+— which is exactly why the loop must not pre-build one (§2).
 
 ```ts
-decide(ctx, obs) {
-  const turn = this.session.turns[ctx.step];
-  if (!turn) return this.liveFallback.decide(ctx, obs); // past the trace → warm-start live
-  return { done: false, actions: turn.actions.map(a => reResolve(a, ctx, obs)) };
-}
+mode = replayMode(loadTrace(file).session, { fallback?, unknownTools?, params? })
 ```
 
-### Param re-resolution (the subtle, credible part)
+### Param re-resolution
 
-A cached action's args are **not** all replayed literally:
-
-- **Literal params** (a constant the model chose) → reused as-is.
-- **Sourced params** (`_meta.source` on the arg, e.g. "read price from DOM node",
-  "today's date", "value from prior step") → **re-resolved against the live environment**
-  on every replay. This is what keeps replay robust instead of brittle.
-- **Baked-in natural-language text** (descriptions, labels surfaced to a user) must be
-  authored to describe the *role* of a value, not embed the captured literal — otherwise
-  a replay shows last week's price next to this week's data.
+A recorded action's args are **not** all replayed literally:
 
 ```ts
 type ArgSource =
-  | { kind: "literal" }                                  // reuse captured value
-  | { kind: "dom"; selector: string }                    // re-read from the live page
-  | { kind: "now" }                                       // recompute current time
-  | { kind: "fromTurn"; turn: number; path: string };    // pull from a prior turn's result
+  | { kind: "literal" }                              // reuse the captured value
+  | { kind: "dom"; selector: string }                // re-read from the live page
+  | { kind: "now" }                                  // recompute current time
+  | { kind: "fromTurn"; turn: number; path: string } // a dot-path into THIS run
 ```
 
-> Re-resolution is what separates robust replay from brittle record-and-playback:
-> `argSources` params recompute against the live world; literals are reused; baked-in
-> natural-language text paraphrases the *role*, never the captured value.
+`fromTurn` resolves against the **replayed** turns of the current run, not the
+recording — that is what keeps chained values live. Anything the environment
+owns (`dom`, and any future kind) is delegated to `env.resolveArg()`.
 
-**Bonus framing — Replay is your demo insurance.** If the live model or browser flakes
-on stage, switch to replay of a known-good trace and tell the audience it's a real
-production feature, not a fallback hack.
+`argSources` are reported by the **tool**, because the tool is what knows an arg
+was an element handle rather than a constant. `BrowserEnv` is the main producer:
+a click records `{kind:"dom", selector:"button|Add Titanium Tent Stakes to cart"}`
+beside `elementId: 2`.
+
+**A selector that matches nothing fails the call.** It does not fall back to the
+recorded element id. That id is a positional handle from another run, and
+reusing it means clicking whatever sits there now and reporting success — the
+failure mode that costs the most, because it looks exactly like success.
+
+### Re-pointing a recording (`session.params`)
+
+A recording that knows what it was *about* can be re-run for a different
+subject. `session.params` names the values (`item: "Titanium Tent Stakes"`), and
+`replayMode({ params })` substitutes each recorded value for a new one in the
+arguments passed **and** in the DOM selectors re-resolved. No model runs.
+
+Three deliberate limits (`packages/core/src/rebind.ts`):
+
+- Values under three characters are refused — substituting `"a"` everywhere is
+  not a feature.
+- The completion summary is never rewritten. No model runs during a replay, so
+  that sentence belongs to the recorded model; substituting a name into it
+  produces a fluent sentence with the recorded run's *numbers* still inside.
+- An unmatchable selector fails loudly, per above.
+
+### Unknown tools
+
+A recording can contain calls to tools its *mode* registered rather than the
+environment (accuracy's `update_plan`). Replay does not run that mode's
+`prepare()`, so those tools are absent. Default policy `skip` drops the calls,
+and drops a turn made up entirely of them — a turn with zero tool calls is how
+the loop recognizes "the model stopped" and would end the run early.
+`stub` keeps them instead, replaying each recorded result.
+
+### Warm-start
+
+When the trace runs out, an optional `fallback` mode takes over live from that
+turn: replay `0..N`, live from `N+1`.
 
 ### 6.1 Turn-based incremental prompt caching
 
-The same `Turn` structure that powers replay also makes long runs cheap. The Messages API
-caches prefixes via `cache_control` breakpoints (only **4** allowed), and bills cache reads
-at a fraction of fresh input tokens.
+The same `Turn` structure makes long runs cheap. Render order is
+`tools` → `system` → `messages`, and caching is a **prefix match** — any byte
+change anywhere in the prefix invalidates everything after it.
 
-- A closed `Turn` is **immutable**, so the serialized prefix `turns[0..k]` is byte-stable —
-  a safe cache segment. Each new turn re-sends the whole history, but `turns[0..k]` is served
-  from cache instead of re-processed.
-- With only 4 breakpoints, anchor them at turn boundaries in a **laddered** scheme: one at the
-  end of the system/tool preamble (never changes), and the rest sliding to cover the most
-  recent stable turns. Longest warm prefix wins.
-- **Long-turn compaction:** when a turn's tool results are huge, replace them with
-  `turn.compacted.summary` in the *live* context after the turn closes. The live prompt stays
-  small; the full bytes remain in the trace so replay is still faithful.
+**Two breakpoints per request, not four:**
+
+1. On the system block, always (`model-anthropic` sets it). Because tools render
+   first, this one breakpoint caches tools *and* system together.
+2. On the last block of the most recent closed turn (`buildMessages`), so the
+   growing frozen history stays warm.
+
+**Placement discipline.** Current state is *never* frozen into history. It is
+rendered fresh every turn and appended **after** the last breakpoint, where it
+costs full price once and then falls away. History keeps only brief outcomes.
+A tool result, by contrast, *is* frozen prefix — whatever a tool returns is said
+permanently — which is why `BrowserEnv` tools return one line and `update_plan`
+returns one line.
+
+**Request layout is DATA, not code.** `session.contextShape` records which shape
+a run used:
 
 ```ts
-// Build Messages from a Session, anchoring cache breakpoints at chosen turn boundaries.
-function buildMessages(session: Session, breakpoints: number[]): MessageParam[] {
-  return session.turns.flatMap((t) => {
-    const content = t.compacted ? summarize(t) : renderTurn(t);
-    if (breakpoints.includes(t.index)) markCacheControl(content); // ephemeral cache point
-    return content;
-  });
+interface ContextShape {
+  freezeState?: boolean;            // rung 1: freeze state into history
+  cacheAt?: "last-turn" | "end";    // "end" is the "cache everything" instinct
 }
 ```
 
-Net effect: an N-turn run costs ~O(1) fresh input per turn instead of O(N), and Replay mode
-reuses the *exact same* serialized turns. One structure, two payoffs.
+`buildMessages` reads it, and so does the viewer. A mode that hand-rolled its
+own messages would put the viewer one step behind the wire.
+
+**The floor.** There is a **minimum cacheable prefix**, it is model-dependent,
+and it is *not* monotonic across generations — 4,096 tokens on Haiku 4.5, 1,024
+on Opus 4.8, 512 on Opus 5. Below it nothing caches: no error, no warning, just
+`cache_read_input_tokens: 0` forever.
+
+Good context construction walks straight into this. The whole discipline is to
+keep bulk *out* of the frozen prefix, which leaves the prefix small. Measured on
+this repo's ladder: the naive rung froze the page into history, ran a
+62,000-token prefix, and cached beautifully; every well-built rung sat between
+900 and 1,900 tokens and cached nothing.
+
+The fix is counter-intuitive — **make the constant part bigger**. A real
+operating guide (`packages/core/src/operating-guide.ts`) and the full tool
+surface take the frozen prefix over the floor. It works only because those bytes
+never change. `npm run floor` measures any recording's eligible prefix against
+the floor, using `count_tokens` rather than `chars/4`, because an estimate on
+the wrong side of a hard threshold answers the question backwards.
 
 ---
 
 ## 7. Environments
 
-### 7.1 BrowserEnv (Playwright)
+### 7.1 NotepadEnv
 
-- `observe()` → accessibility-tree / trimmed-DOM snapshot + URL + a short summary.
-- Tools: `navigate(url)`, `click(target)`, `type(target, text)`, `read(selector)`,
-  `waitFor(condition)`, `done(summary)`.
-- Demo goal: a crisp, *stable* task on a sandbox site (e.g. "find the cheapest item in
-  category X and add it to the cart"). Avoid live third-party sites — flake risk.
-- "Accuracy" here is **objective**: did the cart contain the right item?
+An in-memory list of lines, with `read_notepad` and `append_line`. Zero
+dependencies, used by the spike, the drill, and the comparison. It exists so the
+loop can be exercised with no browser, no network, and no key.
 
-### 7.2 StrudelEnv
+### 7.2 BrowserEnv (Playwright)
 
-- Strudel is browser/WebAudio based → host it in a Playwright-driven page so the agent
-  can actually *make sound* live. (Nice symmetry: the music env reuses the browser substrate.)
-- `observe()` → current pattern source + a structural summary (tempo, layers, which
-  instruments are active). The model reasons over **structure**, since it can't hear audio.
-- Tools: `setTempo(bpm)`, `addLayer(name, pattern)`, `setSound(layer, instrument)`,
-  `mutate(layer, transform)`, `play()`, `done(summary)`.
-- Demo goal: "120 bpm house groove → add a bassline → add a riser into a drop."
-- "Accuracy" here is **subjective**: the critic checks structural rules ("kick on every
-  beat?", "bass in a sensible octave?") rather than ground-truth success. Great talking
-  point about *what "accuracy" even means* across domains.
-- Because Strudel patterns are deterministic code, **replaying a trace reproduces the
-  song exactly** — and tweaking one cached tool call is a live **remix**. Strong finale.
+- `observe()` tags every visible interactive element with a `data-cad-id` and
+  lists it as `[id] <tag> label`, alongside page text and the URL.
+- Page text is **cleaned, not truncated**: the DOM is walked, never-content
+  nodes are skipped, headings are kept so structure survives as text, and
+  consecutive duplicates are dropped. A blunt character cut reads to the model
+  as "the page doesn't contain that".
+- A long page is previewed **head and tail**, because pages put navigation at
+  the top and the things that change — carts, totals, results — at the bottom.
+- Tools: `navigate`, `click`, `type_text`, `press_key`, `hover`,
+  `select_option`, `read_element`, `scroll`, `go_back`, `go_forward`, `reload`,
+  `find_in_page`, `wait_for_text`.
+- `tools: string[]` restricts the offered surface. The environment owns this
+  rather than the caller filtering afterwards, because `systemHint()` and the
+  state block both talk about the tools — a hint that says "use `find_in_page`"
+  when it was filtered out is a prompt naming a tool that does not exist.
+- Element ids are **positional handles**, reassigned on every snapshot. This is
+  the single most important thing the operating guide teaches the model.
+- `resolveArg()` re-finds an element by its recorded `<tag>|<label>` signature
+  on the live page — the producer side of §6.
+
+### 7.3 StrudelEnv
+
+Strudel is WebAudio-based, so it is hosted in a Playwright page with a
+**vendored** bundle — no CDN at showtime. The env owns a map of named layers
+plus a tempo, recompiled into one `stack(...)` program and re-evaluated on every
+change. The model reasons over **structure**, since it cannot hear: `observe()`
+reports tempo, the layer table, engine status, and whether drum samples loaded.
+
+Evaluation errors come back as error tool results and the failed change is
+**rolled back**, so the model self-corrects through the same path the drill
+exercises. Because Strudel patterns are deterministic code, replaying a trace
+reproduces the piece exactly.
 
 ---
 
-## 8. Observability & metrics
+## 8. Observability
 
-- Every `TraceEvent` is emitted on a stream (EventEmitter → WebSocket).
-- A small React dashboard renders the live loop: thought, tool call, observation, verdict.
-- **The money slide:** run the same goal in all three modes and show a comparison panel:
+- Every loop event is emitted through `onEvent` — `turn_start`, `thought`,
+  `action`, `observation`, `done`.
+- `FileTracer` writes `traces/live.json` continuously. The **viewer**
+  (`packages/viz`) tails that file and renders the context anatomy: the request
+  as it grows, block by block, each labelled by the request it belongs to. The
+  agent loop contains zero UI code; the trace file is the only channel.
+- The viewer also hosts the deck (`slides/*.md`) and a run control that
+  **spawns the same CLI a terminal would**, stepping it by writing to stdin.
+  That is a remote control, not a coupling: everything works with it off.
+- `summarizeSession()` in core produces the one-line summary every surface uses
+  — the `traces` listing, the `pin` picker, the money table, the viewer's
+  session overview. One implementation, no drift.
 
-  | Mode | Wall-clock | LLM calls | Tokens | Cost | Success |
-  |------|-----------|-----------|--------|------|---------|
-  | Speed | … | … | … | … | … |
-  | Accuracy | … | … | … | … | … |
-  | Replay | … | 0 | 0 | $0 | … |
+**The money table** (`npm run compare`) runs the same goal under each mode:
 
-  This single table *is* "Speed vs. Accuracy" made concrete.
+| Mode | Wall-clock | LLM calls | Tokens | Cost | Right? |
+|------|-----------|-----------|--------|------|--------|
+| speed | … | … | … | … | … |
+| accuracy | … | … | … | … | … |
+| replay | … | 0 | 0 | $0 | … |
+
+"Right?" is checked against the **world** — what is actually in the cart — not
+against the model's summary. A run can report success and leave the cart wrong,
+and that difference is half the point.
 
 ---
 
 ## 9. Repo layout
 
 ```
-cadence/
-  packages/
-    core/          # Agent loop, interfaces, Tracer, ModelClient
-    modes/         # SpeedMode, AccuracyMode, ReplayMode
-    env-browser/   # BrowserEnv + Playwright tools
-    env-strudel/   # StrudelEnv + pattern tools
-    dashboard/     # React live view + metrics table
-  examples/
-    browser-task.ts
-    strudel-song.ts
-  traces/          # serialized runs (replay artifacts)
-  DESIGN.md
-```
-
----
-
-## 10. Build phases
-
-0. **Spike** — bare loop + dummy env + one tool + Anthropic tool-use. Prove the cycle.
-1. **Core** — typed tool registry (zod), structured Tracer, max-steps, error handling.
-2. **Modes** — `ExecutionMode` abstraction + Speed + Accuracy.
-3. **BrowserEnv** — Playwright tools; pick the stable demo goal.
-4. **Replay** — serialize traces; param re-resolution; cache-miss fallback.
-5. **StrudelEnv** — pattern tools + audio playback in a hosted page.
-6. **Dashboard + metrics** — live loop view + the comparison table.
-7. **Talk polish** — pre-recorded fallbacks, narrative, slide-to-demo choreography.
-
----
-
-## 11. Open decisions
-
-- **Verify granularity** in Accuracy mode: critic after *every* action vs. after the
-  whole run vs. at plan-step boundaries. (Per-action is most dramatic on the dashboard.)
-- **Observation signature** for replay lookup: exact match vs. fuzzy. Exact is simpler
-  and fine for scripted demos; mention fuzzy as "the production hard part."
-- **Strudel critic** rule set — how much music theory to encode vs. keep it loose.
-- **Cost display** — live token accounting per mode, or pre-computed for the slide.
+packages/
+  core/            loop, Session/Turn/Action, tools, tracer, context builder,
+                   operating guide, resilience decorators, rebind, summary
+  model-anthropic/ the only provider-aware code (ModelClient → Claude)
+  modes/           speed · accuracy · replay · naive
+  tracer-file/     Session → disk; live.json to tail, <id>.json to replay
+  testkit/         scripted model client + chaos wrappers (free, deterministic)
+  viz/             context visualizer, deck, and run control (React + Vite)
+  env-notepad/     trivial text environment
+  env-browser/     Playwright environment
+  env-strudel/     live-coded music environment
+examples/          runnable demos, measurements, and the free checks
+slides/            the talk, one file per slide; frontmatter binds recordings
+traces/            recorded runs — replay artifacts and stage insurance
 ```
