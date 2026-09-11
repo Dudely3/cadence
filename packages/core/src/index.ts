@@ -6,6 +6,7 @@ export * from "./environment";
 export * from "./model";
 export * from "./resilience";
 export * from "./mode";
+export * from "./rebind";
 export * from "./tracer";
 export * from "./context";
 export * from "./agent";

@@ -20,6 +20,11 @@ export interface AgentConfig {
   model: ModelClient;
   mode: ExecutionMode;
   tracer: Tracer;
+  /**
+   * Named values this run is about, recorded onto the Session so a later
+   * replay can be re-pointed at different ones. See Session.params.
+   */
+  params?: Record<string, string>;
   /** Optional observer for the live dashboard (Phase 6). */
   onEvent?: (event: AgentEvent) => void;
 }
@@ -27,7 +32,12 @@ export interface AgentConfig {
 export type AgentEvent =
   | { type: "turn_start"; index: number }
   | { type: "thought"; index: number; text: string }
-  | { type: "action"; index: number; tool: string; args: Record<string, unknown> }
+  | {
+      type: "action";
+      index: number;
+      tool: string;
+      args: Record<string, unknown>;
+    }
   | { type: "observation"; index: number; summary: string; ok: boolean }
   | { type: "done"; success: boolean; outcome: RunOutcome };
 
@@ -36,9 +46,13 @@ export type AgentEvent =
  * The only thing that varies between modes is the injected `mode` config.
  */
 export async function run(cfg: AgentConfig): Promise<RunResult> {
-  const { goal, env, tools, model, mode, tracer, onEvent } = cfg;
+  const { goal, env, tools, model, mode, tracer, onEvent, params } = cfg;
 
   const session = tracer.start(goal, mode.name);
+  // Recorded before anything else: what this run was about, by name. A replay
+  // re-points these at new values, which is what turns one recording into a
+  // program rather than a video.
+  if (params) session.params = params;
   const ctx: RunContext = { goal, step: 0, scratch: {} };
 
   // The environment can be dead before we ever ask the model anything — a
@@ -61,7 +75,15 @@ export async function run(cfg: AgentConfig): Promise<RunResult> {
   // static parts, so whatever prepare() produces lands in the cached prefix —
   // and toolDefs is computed AFTER prepare so mode-registered tools are in it.
   try {
-    await mode.prepare?.({ goal, env, tools, model, ctx, session, observation: initialObservation });
+    await mode.prepare?.({
+      goal,
+      env,
+      tools,
+      model,
+      ctx,
+      session,
+      observation: initialObservation,
+    });
   } catch (err) {
     const message = errorMessage(err);
     onEvent?.({ type: "done", success: false, outcome: "error" });
@@ -100,6 +122,37 @@ export async function run(cfg: AgentConfig): Promise<RunResult> {
 
     const turn = tracer.openTurn();
 
+    // Compose the volatile part of the request BEFORE deciding, record it, and
+    // persist. Two things come out of this ordering: a stepped run's pause
+    // shows the whole request instead of just the frozen prefix, and accuracy's
+    // critic call is on record before the decision it informed rather than
+    // appearing alongside it.
+    const modeInput = {
+      goal,
+      env,
+      tools,
+      model,
+      ctx,
+      session,
+      observation: lastObservation,
+    };
+    if (mode.composeTurn) {
+      try {
+        const pending = await mode.composeTurn(modeInput);
+        if (pending.tail !== undefined) turn.tail = pending.tail;
+        if (pending.stateAt !== undefined) turn.stateAt = pending.stateAt;
+        if (pending.critic) turn.critic = pending.critic;
+        tracer.flush?.();
+      } catch (err) {
+        const message = errorMessage(err);
+        tracer.closeTurn(turn);
+        onEvent?.({ type: "done", success: false, outcome: "error" });
+        return tracer.finish("error", lastObservation, {
+          error: `mode.composeTurn() failed at turn ${ctx.step}: ${message}`,
+        });
+      }
+    }
+
     // The mode produces the decision — composing the prompt and calling the
     // model (live), or reading the recorded session (replay). Transport
     // failures are the ModelClient's problem (wrap it in resilient() for retry
@@ -107,15 +160,7 @@ export async function run(cfg: AgentConfig): Promise<RunResult> {
     // than throwing out of run() and taking the process with it.
     let result: ModelResult;
     try {
-      result = await mode.decide({
-        goal,
-        env,
-        tools,
-        model,
-        ctx,
-        session,
-        observation: lastObservation,
-      });
+      result = await mode.decide(modeInput);
     } catch (err) {
       const message = errorMessage(err);
       tracer.closeTurn(turn);
@@ -128,7 +173,8 @@ export async function run(cfg: AgentConfig): Promise<RunResult> {
     turn.thought = result.thought;
     turn.assistantBlocks = result.assistantBlocks;
     turn.usage = result.usage;
-    if (result.thought.trim()) onEvent?.({ type: "thought", index: turn.index, text: result.thought });
+    if (result.thought.trim())
+      onEvent?.({ type: "thought", index: turn.index, text: result.thought });
 
     // No tool calls. The model has stopped working — but "stopped talking" is
     // not "goal achieved", so this is `stopped`, not success. Only an explicit
@@ -165,7 +211,12 @@ export async function run(cfg: AgentConfig): Promise<RunResult> {
         continue;
       }
 
-      onEvent?.({ type: "action", index: turn.index, tool: use.name, args: use.input });
+      onEvent?.({
+        type: "action",
+        index: turn.index,
+        tool: use.name,
+        args: use.input,
+      });
 
       let actionResult: ActionResult;
       try {
@@ -188,7 +239,9 @@ export async function run(cfg: AgentConfig): Promise<RunResult> {
         tool: use.name,
         args: use.input,
         result: actionResult,
-        ...(actionResult.argSources ? { argSources: actionResult.argSources } : {}),
+        ...(actionResult.argSources
+          ? { argSources: actionResult.argSources }
+          : {}),
       });
       lastObservation = actionResult.observation;
       onEvent?.({

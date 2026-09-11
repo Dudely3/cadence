@@ -138,10 +138,10 @@ pre,
 /* ---- layout ---- */
 .columns {
   display: grid;
-  grid-template-columns: 240px minmax(340px, 1fr) minmax(320px, 480px);
-  gap: 12px;
+  gap: 0;
   flex: 1;
   min-height: 0;
+  grid-template-columns: var(--pane-turns) var(--grip-w) minmax(340px, 1fr) minmax(320px, 480px);
 }
 .turns,
 .stack,
@@ -152,7 +152,9 @@ pre,
   padding: 10px;
   overflow-y: auto;
   min-height: 0;
-  max-height: calc(100vh - 250px);
+  /* Was `- 250px`, sized around a 150px footer that no longer exists — the
+     tokens-per-request chart lives in the requests column now. */
+  max-height: calc(100vh - 100px);
 }
 .pane-title {
   font-size: 11px;
@@ -170,10 +172,12 @@ pre,
 }
 
 /* ---- turn sidebar (also the chart's relief table) ---- */
+/* Two lines: the text line, then the token bar. The bar's track is always
+   present so rows keep a constant height as a run grows. */
 .turn-row {
   display: flex;
-  gap: 8px;
-  align-items: baseline;
+  flex-direction: column;
+  gap: 6px;
   width: 100%;
   text-align: left;
   background: none;
@@ -184,6 +188,28 @@ pre,
   color: var(--text-primary);
   cursor: pointer;
 }
+.turn-row-line {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  width: 100%;
+}
+.turn-bar {
+  display: flex;
+  gap: 1px;
+  /* Sized to be read from the back of a room, not from a desk. */
+  height: 18px;
+  width: 100%;
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--grid);
+}
+.turn-bar-seg {
+  /* Percentage widths against the run's peak: the longest bar fills the row,
+     so a prompt that doubles each turn reads as a staircase down the column. */
+  min-width: 4px;
+  border-radius: 3px;
+}
 .turn-row:hover {
   background: var(--cached-tint);
 }
@@ -193,17 +219,22 @@ pre,
 .turn-row-index {
   color: var(--text-muted);
   min-width: 1.5em;
+  font-size: 13px;
 }
 .turn-row-tool {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* The tool name is what someone in the back row reads to follow the run, so
+     it gets the emphasis; the index and the token total stay quieter. */
+  font-size: 14px;
+  font-weight: 600;
 }
 .turn-row-stats {
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
-  font-size: 11px;
+  font-size: 12px;
 }
 .live-dot {
   display: inline-block;
@@ -338,33 +369,7 @@ pre,
   margin: 0;
 }
 
-/* ---- token strip (chart) ---- */
-footer .strip {
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 12px 4px;
-  overflow-x: auto;
-}
-.strip-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.strip-title {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-}
-.legend {
-  display: flex;
-  gap: 14px;
-  font-size: 11px;
-  color: var(--text-secondary);
-}
+/* ---- series legend (block map + requests column) ---- */
 .legend-item {
   display: inline-flex;
   align-items: center;
@@ -376,24 +381,6 @@ footer .strip {
   border-radius: 3px;
   display: inline-block;
 }
-.axis-line {
-  stroke: var(--baseline);
-  stroke-width: 1;
-}
-.axis-label {
-  fill: var(--text-muted);
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-}
-.bar {
-  cursor: pointer;
-}
-.bar-selected path,
-.bar-selected rect:not([fill="transparent"]) {
-  stroke: var(--text-primary);
-  stroke-width: 1;
-}
-
 /* ---- presentation block map ---- */
 .present {
   flex: 1;
@@ -800,12 +787,22 @@ footer .strip {
   flex: 1;
   min-height: 0;
 }
+/* Columns come from an inline grid template (see usePaneWidth): the widths are
+   draggable and remembered, so the layout can be set for the room. `gap` is 0
+   because the grips ARE the gaps. */
 .split {
   display: grid;
-  grid-template-columns: minmax(360px, 3fr) minmax(420px, 5fr);
-  gap: 12px;
+  gap: 0;
   flex: 1;
   min-height: 0;
+}
+/* Widths of the sized panes arrive as --pane-a / --pane-b (see usePaneWidth);
+   the anatomy pane takes the remainder and never goes below 320px. */
+.split-2 {
+  grid-template-columns: var(--pane-a) var(--grip-w) minmax(320px, 1fr);
+}
+.split-3 {
+  grid-template-columns: var(--pane-a) var(--grip-w) var(--pane-b) var(--grip-w) minmax(320px, 1fr);
 }
 .split > * {
   min-width: 0;
@@ -817,19 +814,26 @@ footer .strip {
 }
 /* Half the width can't hold three columns: turns stay left, the block stack
    goes top-right, and the detail pane drops underneath it. */
+/* Half the width can't hold three columns: turns stay left, the block stack
+   goes top-right, and the detail pane drops underneath it. Column widths come
+   from the inline template; only the rows are set here. */
 .split .columns {
-  grid-template-columns: 132px minmax(0, 1fr);
+  grid-template-columns: var(--pane-turns) var(--grip-w) minmax(0, 1fr);
   grid-template-rows: minmax(0, 3fr) minmax(0, 2fr);
 }
-.split .turns {
+/* Scoped to the anatomy grid with `>`: an unscoped `.split .grip` also matched
+   the TOP-LEVEL grips, forcing them to span two rows in a one-row grid and
+   scrambling auto-placement — the panes landed in each other's tracks. */
+.split .columns > .turns,
+.split .columns > .grip {
   grid-row: 1 / span 2;
 }
 .split .stack {
-  grid-column: 2;
+  grid-column: 3;
   grid-row: 1;
 }
 .split .detail {
-  grid-column: 2;
+  grid-column: 3;
   grid-row: 2;
 }
 .empty-trace {
@@ -839,7 +843,12 @@ footer .strip {
   border-radius: 6px;
 }
 @media (max-width: 1100px) {
-  .split {
+  /* Too narrow for columns: stack them. This has to beat the pane widths, and
+     it does because those arrive as custom properties rather than as an inline
+     grid-template-columns, which would outrank any stylesheet rule. */
+  .split,
+  .split-2,
+  .split-3 {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(220px, 2fr) minmax(0, 3fr);
   }
@@ -861,12 +870,18 @@ footer .strip {
 }
 
 /* --- talk slides ------------------------------------------------------- */
+/* Flex, not grid rows: the session strip is only there on slides that bind a
+   recording, and a fixed row template would give the body an auto row (and no
+   scrollbar) on the slides that don't. */
 .slides {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 10px;
   min-width: 0;
   min-height: 0;
+}
+.slides > .sl-body {
+  flex: 1;
 }
 .sl-bar {
   display: flex;
@@ -978,4 +993,205 @@ footer .strip {
   border-radius: 4px;
   background: var(--page);
   font-size: 0.9em;
+}
+
+/* --- slide ⇄ session binding ------------------------------------------- */
+.sl-sessions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.sl-sessions-label {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.sl-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-1);
+  overflow: hidden;
+}
+.sl-chip-open {
+  border-color: var(--series-1);
+  box-shadow: inset 0 0 0 1px var(--series-1);
+}
+.sl-chip-missing {
+  opacity: 0.55;
+}
+.sl-chip-open-btn {
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.sl-chip-open-btn:disabled {
+  cursor: default;
+}
+.sl-chip-x {
+  border: 0;
+  border-left: 1px solid var(--border);
+  background: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 3px 7px;
+  cursor: pointer;
+}
+.sl-chip-x:hover {
+  color: var(--text-primary);
+}
+
+/* --- the run panel's slide preset -------------------------------------- */
+.run-preset {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.run-preset-note {
+  color: var(--text-muted);
+}
+.run-fixed {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--page);
+  overflow-x: auto;
+}
+.run-fixed code {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Ordered lists: the stage walkthroughs are numbered, and a walkthrough whose
+   steps render as one paragraph is unusable at a lectern. */
+.sl-ol {
+  list-style: decimal;
+}
+.sl-ol li::marker {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- which slides the open recording is about --------------------------- */
+/* The reverse of a slide's session strip. Numbers only: the header has no room
+   for titles, and the title is on hover. */
+.slide-links {
+  display: inline-flex;
+  gap: 4px;
+}
+.slide-link {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.slide-link:hover {
+  color: var(--text-primary);
+}
+.slide-link-on {
+  border-color: var(--series-1);
+  color: var(--text-primary);
+}
+.slide-link-more {
+  font-size: 11px;
+  color: var(--text-muted);
+  align-self: center;
+}
+
+/* --- requests column: peak label + legend ------------------------------ */
+.turns-peak {
+  margin-left: auto;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-secondary);
+}
+/* The legend the footer used to carry. Short labels and wrapping, because this
+   column is 168px wide in the three-pane split. */
+.turns-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 10px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* --- draggable seams ---------------------------------------------------- */
+/* A grid track of its own, so dragging changes the neighbour's width rather
+   than overlaying anything. It doubles as the gutter the grid used to get from
+   `gap`, which is why the surrounding grids now set gap: 0. */
+:root {
+  --grip-w: 12px;
+}
+.grip {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  /* No background: it should read as space until you go near it. */
+  background: none;
+  border: 0;
+  padding: 0;
+  touch-action: none;
+}
+.grip-line {
+  width: 2px;
+  height: 28px;
+  border-radius: 1px;
+  background: var(--border);
+}
+.grip:hover .grip-line,
+.grip:focus-visible .grip-line {
+  background: var(--series-1);
+  height: 56px;
+}
+.grip:focus-visible {
+  outline: 2px solid var(--series-1);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+/* --- narrow screens ----------------------------------------------------- */
+/* Deliberately the LAST rules in the file. These override the layout grids
+   above, and at equal specificity the later rule wins — an override written
+   next to the thing it overrides silently lost this fight once already. */
+@media (max-width: 1100px) {
+  /* Stacked layout: a vertical seam means nothing when the panes are rows. */
+  .grip {
+    display: none;
+  }
+  .columns,
+  .split .columns {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+  }
+  /* The split layout places these explicitly into column 3 / row spans. Left
+     set, an explicit `grid-column: 3` against a one-track template CREATES two
+     implicit tracks, and the stack ends up beside the requests list again
+     rather than under it — measured as `380px 0px 584px` where one track was
+     expected. */
+  .split .columns > .turns,
+  .split .columns > .grip,
+  .split .stack,
+  .split .detail {
+    grid-column: auto;
+    grid-row: auto;
+  }
 }

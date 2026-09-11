@@ -1,25 +1,28 @@
 import type { Session } from "@cadence/core";
 import { costOfSession } from "@cadence/core";
+import { parseSlide, type SlideMeta } from "./slideMeta";
+
+export type { SlideRun, SlideMeta } from "./slideMeta";
+export { parseFrontmatter, parseSlide } from "./slideMeta";
+export { parseInline, parseMarkdown, type Block, type Inline } from "./markdown";
 
 /**
  * Slides for the talk: markdown files in `slides/`, loaded at build time so
  * editing one hot-reloads the page.
  *
- * Two things make these worth having in the viewer rather than in Keynote:
- * they sit beside the live anatomy, and `{{...}}` placeholders resolve against
- * the trace that's currently open — so a caching claim is illustrated with the
- * numbers from the run on screen, not numbers from a rehearsal.
+ * Three things make these worth having in the viewer rather than in Keynote:
+ * they sit beside the live anatomy, `{{...}}` placeholders resolve against the
+ * trace that's currently open — so a caching claim is illustrated with the
+ * numbers from the run on screen, not numbers from a rehearsal — and a slide
+ * can name the recordings and the run that belong to it, so moving to a slide
+ * also moves the viewer to the evidence for it.
  */
 
-export interface Slide {
+export interface Slide extends SlideMeta {
   /** File-order index, 0-based. */
   index: number;
   /** Source file name, e.g. "07-the-floor.md". */
   name: string;
-  /** First heading, used for the slide list. */
-  title: string;
-  /** Raw markdown, placeholders unresolved. */
-  body: string;
 }
 
 const files = import.meta.glob("../../../slides/*.md", {
@@ -30,11 +33,24 @@ const files = import.meta.glob("../../../slides/*.md", {
 
 export const SLIDES: Slide[] = Object.entries(files)
   .sort(([a], [b]) => a.localeCompare(b))
-  .map(([path, body], index) => {
+  .map(([path, raw], index) => {
     const name = path.split("/").pop() ?? path;
-    const heading = body.split("\n").find((l) => l.startsWith("# "));
-    return { index, name, title: heading ? heading.slice(2).trim() : name, body };
+    return { index, name, ...parseSlide(name, raw, (m) => console.warn(`${name}: ${m}`)) };
   });
+
+/**
+ * Which slides are about this recording — the reverse of a slide's `sessions`.
+ *
+ * Not one-to-one: one agent run backs seven different slides here, because the
+ * same trace illustrates the goal message, the cache line, stability, the
+ * lookback and more. So this returns all of them and the caller decides; only
+ * an unambiguous single match is safe to act on automatically.
+ */
+export function slidesForTrace(trace: string, pins: Record<string, string[]> = {}): Slide[] {
+  return SLIDES.filter(
+    (s) => s.sessions.includes(trace) || (pins[s.name] ?? []).includes(trace),
+  );
+}
 
 /**
  * Values a slide can interpolate with `{{name}}`. Everything comes from the
@@ -79,110 +95,4 @@ export function slideValues(session: Session | undefined): Record<string, string
 /** Replace `{{name}}` with a live value; unknown names are left visible. */
 export function resolvePlaceholders(text: string, values: Record<string, string>): string {
   return text.replace(/\{\{(\w+)\}\}/g, (whole, key: string) => values[key] ?? whole);
-}
-
-// --- a very small markdown subset ------------------------------------------
-// Deliberately hand-rolled: this repo ships two runtime dependencies and a
-// slide deck isn't a good reason for a third. Supports what the slides use —
-// headings, bullets, tables, block quotes, rules, fenced code, and inline
-// bold / code.
-
-export type Inline = { text: string; bold?: boolean; code?: boolean };
-
-export type Block =
-  | { kind: "h1" | "h2" | "h3" | "p" | "quote"; spans: Inline[] }
-  | { kind: "ul"; items: Inline[][] }
-  | { kind: "code"; text: string }
-  | { kind: "table"; head: Inline[][]; rows: Inline[][][] }
-  | { kind: "hr" };
-
-export function parseInline(text: string): Inline[] {
-  const spans: Inline[] = [];
-  // One pass over **bold** and `code`; nesting isn't needed by these slides.
-  const re = /(\*\*([^*]+)\*\*|`([^`]+)`)/g;
-  let last = 0;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) {
-    if (m.index > last) spans.push({ text: text.slice(last, m.index) });
-    if (m[2] !== undefined) spans.push({ text: m[2], bold: true });
-    else if (m[3] !== undefined) spans.push({ text: m[3], code: true });
-    last = m.index + m[0].length;
-  }
-  if (last < text.length) spans.push({ text: text.slice(last) });
-  return spans.length ? spans : [{ text }];
-}
-
-const cells = (row: string): Inline[][] =>
-  row
-    .replace(/^\||\|$/g, "")
-    .split("|")
-    .map((c) => parseInline(c.trim()));
-
-export function parseMarkdown(src: string): Block[] {
-  const out: Block[] = [];
-  const lines = src.split(/\r?\n/);
-  let para: string[] = [];
-
-  const flush = (): void => {
-    if (para.length === 0) return;
-    out.push({ kind: "p", spans: parseInline(para.join(" ")) });
-    para = [];
-  };
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i] ?? "";
-    const t = line.trim();
-
-    if (t === "") { flush(); continue; }
-    if (t.startsWith("```")) {
-      flush();
-      const buf: string[] = [];
-      i++;
-      while (i < lines.length && !(lines[i] ?? "").trim().startsWith("```")) buf.push(lines[i] ?? "");
-      out.push({ kind: "code", text: buf.join("\n") });
-      continue;
-    }
-    if (/^---+$/.test(t)) { flush(); out.push({ kind: "hr" }); continue; }
-    if (t.startsWith("### ")) { flush(); out.push({ kind: "h3", spans: parseInline(t.slice(4)) }); continue; }
-    if (t.startsWith("## ")) { flush(); out.push({ kind: "h2", spans: parseInline(t.slice(3)) }); continue; }
-    if (t.startsWith("# ")) { flush(); out.push({ kind: "h1", spans: parseInline(t.slice(2)) }); continue; }
-    if (t.startsWith("> ")) {
-      flush();
-      const buf = [t.slice(2)];
-      while (i + 1 < lines.length && (lines[i + 1] ?? "").trim().startsWith(">")) {
-        buf.push((lines[++i] ?? "").trim().replace(/^>\s?/, ""));
-      }
-      out.push({ kind: "quote", spans: parseInline(buf.join(" ")) });
-      continue;
-    }
-    if (t.startsWith("| ")) {
-      flush();
-      const rows = [t];
-      while (i + 1 < lines.length && (lines[i + 1] ?? "").trim().startsWith("|")) rows.push((lines[++i] ?? "").trim());
-      // A markdown table's second row is the alignment rule — skip it.
-      const [head, , ...body] = rows;
-      out.push({ kind: "table", head: cells(head ?? ""), rows: body.map(cells) });
-      continue;
-    }
-    if (t.startsWith("- ")) {
-      flush();
-      const items = [t.slice(2)];
-      while (i + 1 < lines.length) {
-        const next = (lines[i + 1] ?? "").trim();
-        if (next.startsWith("- ")) { items.push(next.slice(2)); i++; continue; }
-        // An indented continuation line belongs to the bullet above it.
-        if (next !== "" && (lines[i + 1] ?? "").startsWith("  ")) {
-          items[items.length - 1] += ` ${next}`;
-          i++;
-          continue;
-        }
-        break;
-      }
-      out.push({ kind: "ul", items: items.map(parseInline) });
-      continue;
-    }
-    para.push(t);
-  }
-  flush();
-  return out;
 }

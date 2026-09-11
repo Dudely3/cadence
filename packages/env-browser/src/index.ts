@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { chromium, type Browser, type Page } from "playwright";
-import type { ActionResult, ArgSource, Environment, Observation, Tool } from "@cadence/core";
+import type {
+  ActionResult,
+  ArgSource,
+  Environment,
+  Observation,
+  Tool,
+} from "@cadence/core";
 
 /**
  * BrowserEnv — Playwright behind the same Environment interface the notepad
@@ -41,8 +47,29 @@ export interface BrowserEnvOptions {
    * to speaker links before any session link appeared.
    */
   maxElements?: number;
-  /** Characters of cleaned page text shown in the state block. Default 6000. */
+  /** Characters of page text shown in the state block. Default 6000. */
   pageTextLimit?: number;
+  /**
+   * Restrict which of this environment's tools are offered, by name. Default:
+   * all of them.
+   *
+   * The environment owns this rather than the caller filtering
+   * availableTools() afterwards, because the system hint and the state block
+   * both talk about the tools — a hint that says "use find_in_page" when
+   * find_in_page was filtered out is a prompt telling the model to call
+   * something that does not exist.
+   */
+  tools?: string[];
+  /**
+   * What the state block carries for page content.
+   *
+   *   "cleaned" (default) — the extracted text: markup gone, headings kept
+   *   "raw"               — document.outerHTML, every tag and attribute
+   *
+   * "raw" exists to be measured against, not used: it's the naive choice the
+   * context ladder starts from (examples/ladder.ts).
+   */
+  representation?: "cleaned" | "raw";
   /**
    * Page viewport. Default 1280x900. Shrink it when the headed window has to
    * share the screen with something else (the context viewer, on stage).
@@ -61,6 +88,25 @@ export interface BrowserEnvOptions {
 
 const PAGE_TEXT_LIMIT = 6_000;
 
+/**
+ * A preview of a long page: the head AND the tail, not just the head.
+ *
+ * Pages put navigation and headings at the top and the things that change —
+ * carts, totals, status, results — at the BOTTOM. A head-only preview hides
+ * exactly the part a task usually needs to read back, and the model burns
+ * turns hunting for a total that was cut off. Measured: with a head-only
+ * window the ladder's explore rung added the right items and then thrashed
+ * for six turns trying to read the cart total.
+ */
+function previewOf(text: string, limit: number): string {
+  if (text.length <= limit) return text;
+  const head = Math.floor(limit * 0.7);
+  const tail = limit - head;
+  const skipped = text.length - limit;
+  const gap = `\n\n… ${skipped} characters not shown — use find_in_page to search them …\n\n`;
+  return text.slice(0, head) + gap + text.slice(text.length - tail);
+}
+
 export class BrowserEnv implements Environment {
   name = "browser";
   private browser: Browser | undefined;
@@ -77,12 +123,16 @@ export class BrowserEnv implements Environment {
 
   private async ensurePage(): Promise<Page> {
     if (this.page) return this.page;
-    this.browser = await chromium.launch({ headless: this.opts.headless ?? true });
+    this.browser = await chromium.launch({
+      headless: this.opts.headless ?? true,
+    });
     this.page = await this.browser.newPage({
       viewport: this.opts.viewport ?? { width: 1280, height: 900 },
     });
     this.page.setDefaultTimeout(this.opts.actionTimeoutMs ?? 5000);
-    this.page.setDefaultNavigationTimeout(this.opts.navigationTimeoutMs ?? 30_000);
+    this.page.setDefaultNavigationTimeout(
+      this.opts.navigationTimeoutMs ?? 30_000,
+    );
     // tsx/esbuild's keepNames decorates functions with a __name helper that
     // doesn't exist inside the browser — page.evaluate callbacks would throw.
     await this.page.addInitScript("window.__name = (fn) => fn;");
@@ -103,11 +153,19 @@ export class BrowserEnv implements Environment {
         const s = window.getComputedStyle(el as HTMLElement);
         return s.visibility !== "hidden" && s.display !== "none";
       };
+      // Tag EVERY visible interactive element; the caller decides how many to
+      // LIST. Addressability and display are different concerns: capping before
+      // tagging makes anything past the cap both unclickable and invisible to
+      // find_in_page, so a search can surface a button the model then cannot
+      // press. 2000 is only a runaway guard.
+      void maxEls;
       const els = Array.from(
-        document.querySelectorAll("a[href], button, input, select, textarea, [role='button']"),
+        document.querySelectorAll(
+          "a[href], button, input, select, textarea, [role='button']",
+        ),
       )
         .filter(visible)
-        .slice(0, maxEls);
+        .slice(0, 2000);
       const infos = els.map((el, i) => {
         el.setAttribute("data-cad-id", String(i));
         const tag = el.tagName.toLowerCase();
@@ -118,8 +176,14 @@ export class BrowserEnv implements Environment {
           (el.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 80) ||
           el.getAttribute("name") ||
           "";
-        const hasValue = tag === "input" || tag === "textarea" || tag === "select";
-        return { id: i, tag, label, value: hasValue ? (input.value ?? "") : "" };
+        const hasValue =
+          tag === "input" || tag === "textarea" || tag === "select";
+        return {
+          id: i,
+          tag,
+          label,
+          value: hasValue ? (input.value ?? "") : "",
+        };
       });
       // CLEAN the page rather than truncate it (Solo's approach): walk the DOM,
       // skip the parts that are never content, keep headings so structure
@@ -128,8 +192,16 @@ export class BrowserEnv implements Environment {
       // whatever sits below it, which reads to the model as "the page doesn't
       // contain that" and sends it hunting for a scrollbar it doesn't have.
       const SKIP = new Set([
-        "SCRIPT", "STYLE", "NOSCRIPT", "SVG", "IFRAME", "CANVAS",
-        "TEMPLATE", "HEAD", "META", "LINK",
+        "SCRIPT",
+        "STYLE",
+        "NOSCRIPT",
+        "SVG",
+        "IFRAME",
+        "CANVAS",
+        "TEMPLATE",
+        "HEAD",
+        "META",
+        "LINK",
       ]);
       const BREAK = "␀break";
       const lines: string[] = [];
@@ -154,7 +226,11 @@ export class BrowserEnv implements Environment {
           return;
         }
         for (const child of Array.from(el.childNodes)) walk(child);
-        if (style.display.startsWith("block") || el.tagName === "LI" || el.tagName === "TR") {
+        if (
+          style.display.startsWith("block") ||
+          el.tagName === "LI" ||
+          el.tagName === "TR"
+        ) {
           lines.push(BREAK);
         }
       };
@@ -169,40 +245,81 @@ export class BrowserEnv implements Environment {
         if (cleaned[cleaned.length - 1] === raw) continue;
         cleaned.push(raw);
       }
-      const text = cleaned.join("\n").replace(/\n{3,}/g, "\n\n").trim();
-      return { title: document.title, text, infos };
+      const text = cleaned
+        .join("\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+      return {
+        title: document.title,
+        text,
+        rawHtml: document.documentElement.outerHTML,
+        infos,
+      };
     }, max);
 
     this.elements = snap.infos;
-    this.lastText = snap.text;
+    const raw = this.opts.representation === "raw";
+    this.lastText = raw ? snap.rawHtml : snap.text;
     const limit = this.opts.pageTextLimit ?? PAGE_TEXT_LIMIT;
+    const content = raw ? snap.rawHtml : snap.text;
     // Say so when the preview is partial. Silent truncation reads to the model
     // as "the page doesn't contain that", and it goes looking for a scrollbar.
-    const truncated = snap.text.length > limit;
-    const elementLines = snap.infos
-      .map((e) => `[${e.id}] <${e.tag}> ${e.label}${e.value ? ` (value: ${JSON.stringify(e.value)})` : ""}`)
-      .join("\n");
+    const truncated = content.length > limit;
+    // Only advertise a tool that is actually offered. Telling the model to
+    // "use find_in_page" when find_in_page was not registered is a prompt
+    // pointing at nothing, and it spends turns finding that out.
+    const searchable = this.has("find_in_page");
+    // Display is capped; addressability is not. Everything tagged above stays
+    // clickable and findable, so find_in_page can hand back an [id] the model
+    // never saw listed — which is what makes a small window workable.
+    const shown = snap.infos.slice(0, max);
+    const elementLines =
+      shown
+        .map(
+          (e) =>
+            `[${e.id}] <${e.tag}> ${e.label}${e.value ? ` (value: ${JSON.stringify(e.value)})` : ""}`,
+        )
+        .join("\n") +
+      (snap.infos.length > shown.length
+        ? `\n… ${snap.infos.length - shown.length} more elements not listed — find_in_page returns their [id]s.`
+        : "");
 
     return {
       summary:
-        `URL: ${page.url()}\nTitle: ${snap.title}\n\n--- page text${
+        `URL: ${page.url()}\nTitle: ${snap.title}\n\n--- page ${raw ? "HTML" : "text"}${
           truncated
-            ? ` (first ${limit} of ${snap.text.length} chars — use find_in_page to search the rest)`
+            ? ` (first ${limit} of ${content.length} chars${
+                searchable
+                  ? " — use find_in_page to search the rest"
+                  : " — the rest is not available"
+              })`
             : " (complete)"
         } ---\n` +
-        `${snap.text.slice(0, limit)}` +
+        `${previewOf(content, limit)}` +
         `\n\n--- interactive elements ---\n${elementLines}`,
       raw: { url: page.url(), elements: snap.infos },
     };
   }
 
   systemHint(): string {
-    return [
-      "A web browser. Each turn you receive a fresh CURRENT STATE block: cleaned page text plus a numbered list of interactive elements. Tool results are brief confirmations only.",
-      "The page text may be a PREVIEW of a longer page — its header says so when it is. To look for something that isn't in the preview, use find_in_page rather than scrolling or re-reading: it searches the whole page and reports matching lines and elements.",
+    const parts = [
+      "A web browser. Each turn you receive a fresh CURRENT STATE block: the page plus a numbered list of interactive elements. Tool results are brief confirmations only — the state block is where the page is.",
+    ];
+    // There is no read-the-page tool: the state block already contains the
+    // page, so one would hand back what the model was just given. Say so,
+    // because a model that cannot find something will otherwise look for one.
+    parts.push(
+      this.has("find_in_page")
+        ? "The page text may be a PREVIEW of a longer page — its header says so when it is. To look for something that isn't in the preview, use find_in_page: it searches the whole page and reports matching lines and elements. There is no tool that re-reads the page; the state block is the page."
+        : "The state block's header says whether the page is complete or a preview. There is no tool that re-reads or re-fetches the page — what you are given each turn is all of it there is.",
+    );
+    parts.push(
       "Act on elements by their [id]. Ids are re-assigned on every state refresh — always use ids from the LATEST current-state block.",
+    );
+    parts.push(
       "When the goal is met, call complete with an appropriate status.",
-    ].join(" ");
+    );
+    return parts.join(" ");
   }
 
   /** Signature used for dom argSources: "<tag>|<label>". */
@@ -219,22 +336,42 @@ export class BrowserEnv implements Environment {
     const exact = this.elements.find((e) => e.tag === tag && e.label === label);
     if (exact) return exact.id;
     const fuzzy = this.elements.find(
-      (e) => e.tag === tag && label !== undefined && (e.label.includes(label) || label.includes(e.label)),
+      (e) =>
+        e.tag === tag &&
+        label !== undefined &&
+        (e.label.includes(label) || label.includes(e.label)),
     );
     return fuzzy?.id;
   }
 
   availableTools(): Tool[] {
-    return [
+    const all = [
       this.navigateTool(),
       this.clickTool(),
       this.typeTool(),
-      this.readPageTool(),
-      this.findInPageTool(),
-      this.scrollTool(),
+      this.pressKeyTool(),
+      this.hoverTool(),
       this.selectOptionTool(),
+      this.findInPageTool(),
+      this.readElementTool(),
+      this.waitForTextTool(),
+      this.scrollTool(),
       this.goBackTool(),
+      this.goForwardTool(),
+      this.reloadTool(),
     ];
+    const wanted = this.opts.tools;
+    if (!wanted) return all;
+    for (const name of wanted) {
+      if (!all.some((t) => t.name === name))
+        console.warn(`BrowserEnv: no tool named "${name}"`);
+    }
+    return all.filter((t) => wanted.includes(t.name));
+  }
+
+  /** Is this tool actually offered? The prompt's wording depends on it. */
+  private has(name: string): boolean {
+    return this.opts.tools ? this.opts.tools.includes(name) : true;
   }
 
   async dispose(): Promise<void> {
@@ -257,20 +394,32 @@ export class BrowserEnv implements Environment {
    * it answers the question the model actually has ("is X on this page, and
    * what can I click near it?"), which a page dump only answers by accident.
    */
+  /** Matches shown per find_in_page call. The reported count is the true total. */
+  private static readonly MAX_HITS = 12;
+
   private findInPageTool(): Tool<{ text: string; context?: number }> {
     return {
       name: "find_in_page",
       description:
-        "Search the current page for text. Returns each matching line with surrounding lines, plus any interactive elements whose label matches.",
+        "Search the current page for text. Returns each matching line with surrounding lines, plus any interactive elements whose label matches. To read a whole section, search for its heading with a large context.",
       schema: z.object({
-        text: z.string().min(1).describe("Case-insensitive text to search for."),
+        text: z
+          .string()
+          .min(1)
+          .describe("Case-insensitive text to search for."),
         context: z
           .number()
           .int()
           .min(0)
-          .max(10)
+          // 10 was too small and the model told us so: asked for a section, hit
+          // "too_big", and then re-issued the same search three times instead.
+          // A cap that refuses a legitimate request does not save context, it
+          // spends turns — reading one section is exactly what this is for.
+          .max(80)
           .optional()
-          .describe("Lines of surrounding context per match. Default 2."),
+          .describe(
+            "Lines of surrounding context per match. Default 2. Use 30-80 to read a whole section around its heading.",
+          ),
       }),
       execute: async (_env, args): Promise<ActionResult> => {
         // Reuse observe() rather than extracting again: one cleaning path means
@@ -286,17 +435,35 @@ export class BrowserEnv implements Environment {
         const pad = args.context ?? 2;
 
         const hits: string[] = [];
+        // Count every match but show only the first MAX_HITS. Reporting the
+        // shown count as the total tells the model "8 matches" when there were
+        // 40, and a model that believes it has seen everything stops looking.
+        let matched = 0;
         for (let i = 0; i < lines.length; i++) {
           if (!(lines[i] ?? "").toLowerCase().includes(needle)) continue;
+          matched += 1;
+          if (hits.length >= BrowserEnv.MAX_HITS) continue;
           const from = Math.max(0, i - pad);
           const to = Math.min(lines.length - 1, i + pad);
-          hits.push(
-            lines
-              .slice(from, to + 1)
-              .map((l, k) => `${from + k === i ? ">" : " "} ${l}`)
-              .join("\n"),
-          );
-          if (hits.length >= 8) break; // enough to act on; not a page dump
+          // Say which section the match is in. A window of lines around a hit
+          // can straddle two entries, and then the neighbour's details read as
+          // the match's own — measured: a search that found the right session
+          // title returned the NEXT session's speaker inside its window, and
+          // the model reported that speaker. Cleaning already marks headings
+          // with #, so the nearest one above the match is free to include.
+          let heading = "";
+          for (let h = i; h >= 0 && h > i - 400; h--) {
+            const line = lines[h] ?? "";
+            if (line.startsWith("#")) {
+              heading = line;
+              break;
+            }
+          }
+          const body = lines
+            .slice(from, to + 1)
+            .map((l, k) => `${from + k === i ? ">" : " "} ${l}`)
+            .join("\n");
+          hits.push(heading ? `(under ${heading})\n${body}` : body);
         }
 
         const elementHits = this.elements
@@ -316,7 +483,11 @@ export class BrowserEnv implements Environment {
           ok: true,
           observation: {
             summary:
-              `${hits.length} text match(es) for ${JSON.stringify(args.text)}:\n${hits.join("\n---\n")}` +
+              `${matched} text match(es) for ${JSON.stringify(args.text)}` +
+              (matched > hits.length
+                ? ` — showing the first ${hits.length}; narrow the search to see the rest`
+                : "") +
+              `:\n${hits.join("\n---\n")}` +
               (elementHits.length
                 ? `\n\nMatching interactive elements:\n${elementHits.join("\n")}`
                 : ""),
@@ -332,20 +503,28 @@ export class BrowserEnv implements Environment {
       description:
         "Scroll the page. Page text is already extracted whole, so this is only for pages that load more content as you scroll.",
       schema: z.object({
-        direction: z.enum(["up", "down", "top", "bottom"]).describe("Where to scroll."),
+        direction: z
+          .enum(["up", "down", "top", "bottom"])
+          .describe("Where to scroll."),
       }),
       execute: async (_env, args): Promise<ActionResult> => {
         const page = await this.ensurePage();
         await page.evaluate((dir: string) => {
           const h = window.innerHeight;
           if (dir === "top") window.scrollTo({ top: 0 });
-          else if (dir === "bottom") window.scrollTo({ top: document.body.scrollHeight });
+          else if (dir === "bottom")
+            window.scrollTo({ top: document.body.scrollHeight });
           else window.scrollBy({ top: dir === "down" ? h * 0.9 : -h * 0.9 });
         }, args.direction);
         // Lazy-loaded content needs a moment to arrive before the next snapshot.
         await page.waitForTimeout(350);
         const y = await page.evaluate(() => Math.round(window.scrollY));
-        return { ok: true, observation: { summary: `Scrolled ${args.direction} (now at y=${y}).` } };
+        return {
+          ok: true,
+          observation: {
+            summary: `Scrolled ${args.direction} (now at y=${y}).`,
+          },
+        };
       },
     };
   }
@@ -353,9 +532,13 @@ export class BrowserEnv implements Environment {
   private selectOptionTool(): Tool<{ elementId: number; value: string }> {
     return {
       name: "select_option",
-      description: "Choose an option in a <select> dropdown, by the element's [id].",
+      description:
+        "Choose an option in a <select> dropdown, by the element's [id].",
       schema: z.object({
-        elementId: z.number().int().describe("Element id from the latest snapshot."),
+        elementId: z
+          .number()
+          .int()
+          .describe("Element id from the latest snapshot."),
         value: z.string().describe("Option value or visible label."),
       }),
       execute: async (_env, args): Promise<ActionResult> => {
@@ -365,7 +548,9 @@ export class BrowserEnv implements Environment {
           return {
             ok: false,
             error: `no element [${args.elementId}] in the latest state`,
-            observation: { summary: `No element [${args.elementId}] in the latest CURRENT STATE block.` },
+            observation: {
+              summary: `No element [${args.elementId}] in the latest CURRENT STATE block.`,
+            },
           };
         }
         const locator = page.locator(`[data-cad-id="${args.elementId}"]`);
@@ -379,7 +564,9 @@ export class BrowserEnv implements Environment {
         await this.settle();
         return {
           ok: true,
-          observation: { summary: `Selected ${JSON.stringify(args.value)} in [${args.elementId}].` },
+          observation: {
+            summary: `Selected ${JSON.stringify(args.value)} in [${args.elementId}].`,
+          },
           argSources: { elementId: { kind: "dom", selector: signature } },
         };
       },
@@ -401,59 +588,120 @@ export class BrowserEnv implements Environment {
             observation: { summary: "Nothing to go back to." },
           };
         }
-        return { ok: true, observation: { summary: `Went back to ${page.url()}.` } };
-      },
-    };
-  }
-
-  private navigateTool(): Tool<{ url: string }> {
-    return {
-      name: "navigate",
-      description: "Navigate the browser to a URL.",
-      schema: z.object({ url: z.string().describe("Absolute URL, including protocol.") }),
-      execute: async (_env, args) => {
-        const page = await this.ensurePage();
-        await page.goto(args.url, { waitUntil: "load" });
-        return { ok: true, observation: { summary: `Navigated to ${page.url()}.` } };
-      },
-    };
-  }
-
-  private clickTool(): Tool<{ elementId: number }> {
-    return {
-      name: "click",
-      description: "Click an interactive element from the latest snapshot, by its [id].",
-      schema: z.object({ elementId: z.number().int().describe("Element id from the latest snapshot.") }),
-      execute: async (_env, args): Promise<ActionResult> => {
-        const page = await this.ensurePage();
-        const signature = this.signatureOf(args.elementId);
-        if (signature === undefined) {
-          return {
-            ok: false,
-            error: `no element [${args.elementId}] in the latest state`,
-            observation: { summary: `No element [${args.elementId}] in the latest CURRENT STATE block.` },
-          };
-        }
-        await page.locator(`[data-cad-id="${args.elementId}"]`).click();
-        await this.settle();
         return {
           ok: true,
-          observation: { summary: `Clicked [${args.elementId}] ${signature.replace("|", " · ")}.` },
-          // The id was a handle into a page that can shift — dom-sourced.
-          argSources: { elementId: { kind: "dom", selector: signature } },
+          observation: { summary: `Went back to ${page.url()}.` },
         };
       },
     };
   }
 
-  private typeTool(): Tool<{ elementId: number; text: string; pressEnter?: boolean }> {
+  private goForwardTool(): Tool<Record<string, never>> {
     return {
-      name: "type_text",
-      description: "Type into an input/textarea from the latest snapshot, replacing its contents.",
+      name: "go_forward",
+      description:
+        "Go forward to the next page in browser history. Only works after go_back.",
+      schema: z.object({}) as unknown as z.ZodType<Record<string, never>>,
+      execute: async (): Promise<ActionResult> => {
+        const page = await this.ensurePage();
+        const res = await page
+          .goForward({ waitUntil: "load" })
+          .catch(() => null);
+        if (!res) {
+          return {
+            ok: false,
+            error: "no history entry to go forward to",
+            observation: { summary: "Nothing to go forward to." },
+          };
+        }
+        return {
+          ok: true,
+          observation: { summary: `Went forward to ${page.url()}.` },
+        };
+      },
+    };
+  }
+
+  private reloadTool(): Tool<Record<string, never>> {
+    return {
+      name: "reload",
+      description:
+        "Reload the current page. Use when the page looks like it is showing stale content — not to re-read it, since the state block is regenerated every turn regardless.",
+      schema: z.object({}) as unknown as z.ZodType<Record<string, never>>,
+      execute: async (): Promise<ActionResult> => {
+        const page = await this.ensurePage();
+        await page.reload({ waitUntil: "load" });
+        await this.settle();
+        return {
+          ok: true,
+          observation: { summary: `Reloaded ${page.url()}.` },
+        };
+      },
+    };
+  }
+
+  private pressKeyTool(): Tool<{ key: string; elementId?: number }> {
+    return {
+      name: "press_key",
+      description:
+        "Press a single key, optionally focusing one element first. Use for keys that mean something to the page rather than for entering text: Enter to submit, Escape to dismiss, Tab to move focus, ArrowDown or ArrowUp to move through a list. To type characters, use type_text.",
       schema: z.object({
-        elementId: z.number().int().describe("Element id from the latest snapshot."),
-        text: z.string(),
-        pressEnter: z.boolean().optional().describe("Press Enter after typing."),
+        key: z
+          .string()
+          .min(1)
+          .describe(
+            'One key name, e.g. "Enter", "Escape", "Tab", "ArrowDown", "ArrowUp", "PageDown", "Backspace".',
+          ),
+        elementId: z
+          .number()
+          .int()
+          .optional()
+          .describe(
+            "Focus this element from the latest state block before pressing.",
+          ),
+      }),
+      execute: async (_env, args): Promise<ActionResult> => {
+        const page = await this.ensurePage();
+        if (args.elementId !== undefined) {
+          const signature = this.signatureOf(args.elementId);
+          if (signature === undefined) {
+            return {
+              ok: false,
+              error: `no element [${args.elementId}] in the latest state`,
+              observation: {
+                summary: `No element [${args.elementId}] in the latest CURRENT STATE block.`,
+              },
+            };
+          }
+          await page
+            .locator(`[data-cad-id="${args.elementId}"]`)
+            .press(args.key);
+          await this.settle();
+          return {
+            ok: true,
+            observation: {
+              summary: `Pressed ${args.key} on [${args.elementId}] ${signature.replace("|", " · ")}.`,
+            },
+            argSources: { elementId: { kind: "dom", selector: signature } },
+          };
+        }
+        await page.keyboard.press(args.key);
+        await this.settle();
+        return { ok: true, observation: { summary: `Pressed ${args.key}.` } };
+      },
+    };
+  }
+
+  private hoverTool(): Tool<{ elementId: number }> {
+    return {
+      name: "hover",
+      description:
+        "Move the pointer over an element without clicking. Use to open a menu or reveal content that only appears on hover; the next state block shows whatever appeared.",
+      schema: z.object({
+        elementId: z
+          .number()
+          .int()
+          .describe("Element id from the latest state block."),
       }),
       execute: async (_env, args): Promise<ActionResult> => {
         const page = await this.ensurePage();
@@ -462,7 +710,217 @@ export class BrowserEnv implements Environment {
           return {
             ok: false,
             error: `no element [${args.elementId}] in the latest state`,
-            observation: { summary: `No element [${args.elementId}] in the latest CURRENT STATE block.` },
+            observation: {
+              summary: `No element [${args.elementId}] in the latest CURRENT STATE block.`,
+            },
+          };
+        }
+        await page.locator(`[data-cad-id="${args.elementId}"]`).hover();
+        await this.settle();
+        return {
+          ok: true,
+          observation: {
+            summary: `Hovered [${args.elementId}] ${signature.replace("|", " · ")}.`,
+          },
+          argSources: { elementId: { kind: "dom", selector: signature } },
+        };
+      },
+    };
+  }
+
+  private waitForTextTool(): Tool<{ text: string; timeoutMs?: number }> {
+    return {
+      name: "wait_for_text",
+      description:
+        "Wait until some text appears on the page, for content that loads after the page itself does. Returns as soon as it appears, or reports that it did not within the timeout. Do not use it to re-check something the state block already shows.",
+      schema: z.object({
+        text: z
+          .string()
+          .min(1)
+          .describe("Text to wait for. Case-sensitive substring."),
+        timeoutMs: z
+          .number()
+          .int()
+          .min(100)
+          .max(30000)
+          .optional()
+          .describe("How long to wait. Default 5000."),
+      }),
+      execute: async (_env, args): Promise<ActionResult> => {
+        const page = await this.ensurePage();
+        const timeout = args.timeoutMs ?? 5000;
+        const started = Date.now();
+        try {
+          // getByText matches a substring of rendered text by default, which is
+          // what "appears on the page" means from the model's side.
+          await page
+            .getByText(args.text, { exact: false })
+            .first()
+            .waitFor({ timeout });
+        } catch {
+          return {
+            ok: false,
+            error: `"${args.text}" did not appear within ${timeout}ms`,
+            observation: {
+              summary: `Waited ${timeout}ms and ${JSON.stringify(args.text)} did not appear. It may be spelled differently, or below a preview cut — the state block says when it is partial.`,
+            },
+          };
+        }
+        return {
+          ok: true,
+          observation: {
+            summary: `${JSON.stringify(args.text)} appeared after ${Date.now() - started}ms.`,
+          },
+        };
+      },
+    };
+  }
+
+  private readElementTool(): Tool<{ elementId: number }> {
+    return {
+      name: "read_element",
+      description:
+        "Read one element in full: its complete text, its value, and its link target. The state block truncates long labels to keep the list readable, so use this when a label is cut off and the rest of it matters.",
+      schema: z.object({
+        elementId: z
+          .number()
+          .int()
+          .describe("Element id from the latest state block."),
+      }),
+      execute: async (_env, args): Promise<ActionResult> => {
+        const page = await this.ensurePage();
+        const signature = this.signatureOf(args.elementId);
+        if (signature === undefined) {
+          return {
+            ok: false,
+            error: `no element [${args.elementId}] in the latest state`,
+            observation: {
+              summary: `No element [${args.elementId}] in the latest CURRENT STATE block.`,
+            },
+          };
+        }
+        const detail = await page
+          .locator(`[data-cad-id="${args.elementId}"]`)
+          .evaluate((el) => {
+            const input = el as HTMLInputElement & { href?: string };
+            return {
+              tag: el.tagName.toLowerCase(),
+              text: (el.textContent ?? "").replace(/\s+/g, " ").trim(),
+              value: typeof input.value === "string" ? input.value : "",
+              href: typeof input.href === "string" ? input.href : "",
+              disabled: (el as HTMLButtonElement).disabled === true,
+            };
+          })
+          .catch(() => null);
+        if (!detail) {
+          return {
+            ok: false,
+            error: `element [${args.elementId}] is no longer in the page`,
+            observation: {
+              summary: `[${args.elementId}] was in the last state block but is not in the page now. Act on ids from the newest block.`,
+            },
+          };
+        }
+        const lines = [
+          `[${args.elementId}] <${detail.tag}>${detail.disabled ? " (disabled)" : ""}`,
+          `text: ${detail.text || "(none)"}`,
+        ];
+        if (detail.value) lines.push(`value: ${detail.value}`);
+        if (detail.href) lines.push(`href: ${detail.href}`);
+        return {
+          ok: true,
+          observation: { summary: lines.join("\n") },
+          argSources: { elementId: { kind: "dom", selector: signature } },
+        };
+      },
+    };
+  }
+
+  private navigateTool(): Tool<{ url: string }> {
+    return {
+      name: "navigate",
+      description: "Navigate the browser to a URL.",
+      schema: z.object({
+        url: z.string().describe("Absolute URL, including protocol."),
+      }),
+      execute: async (_env, args) => {
+        const page = await this.ensurePage();
+        await page.goto(args.url, { waitUntil: "load" });
+        return {
+          ok: true,
+          observation: { summary: `Navigated to ${page.url()}.` },
+        };
+      },
+    };
+  }
+
+  private clickTool(): Tool<{ elementId: number }> {
+    return {
+      name: "click",
+      description:
+        "Click an interactive element from the latest snapshot, by its [id].",
+      schema: z.object({
+        elementId: z
+          .number()
+          .int()
+          .describe("Element id from the latest snapshot."),
+      }),
+      execute: async (_env, args): Promise<ActionResult> => {
+        const page = await this.ensurePage();
+        const signature = this.signatureOf(args.elementId);
+        if (signature === undefined) {
+          return {
+            ok: false,
+            error: `no element [${args.elementId}] in the latest state`,
+            observation: {
+              summary: `No element [${args.elementId}] in the latest CURRENT STATE block.`,
+            },
+          };
+        }
+        await page.locator(`[data-cad-id="${args.elementId}"]`).click();
+        await this.settle();
+        return {
+          ok: true,
+          observation: {
+            summary: `Clicked [${args.elementId}] ${signature.replace("|", " · ")}.`,
+          },
+          // The id was a handle into a page that can shift — dom-sourced.
+          argSources: { elementId: { kind: "dom", selector: signature } },
+        };
+      },
+    };
+  }
+
+  private typeTool(): Tool<{
+    elementId: number;
+    text: string;
+    pressEnter?: boolean;
+  }> {
+    return {
+      name: "type_text",
+      description:
+        "Type into an input/textarea from the latest snapshot, replacing its contents.",
+      schema: z.object({
+        elementId: z
+          .number()
+          .int()
+          .describe("Element id from the latest snapshot."),
+        text: z.string(),
+        pressEnter: z
+          .boolean()
+          .optional()
+          .describe("Press Enter after typing."),
+      }),
+      execute: async (_env, args): Promise<ActionResult> => {
+        const page = await this.ensurePage();
+        const signature = this.signatureOf(args.elementId);
+        if (signature === undefined) {
+          return {
+            ok: false,
+            error: `no element [${args.elementId}] in the latest state`,
+            observation: {
+              summary: `No element [${args.elementId}] in the latest CURRENT STATE block.`,
+            },
           };
         }
         const locator = page.locator(`[data-cad-id="${args.elementId}"]`);
@@ -475,22 +933,6 @@ export class BrowserEnv implements Environment {
             summary: `Typed ${JSON.stringify(args.text)} into [${args.elementId}] ${signature.replace("|", " · ")}${args.pressEnter ? " and pressed Enter" : ""}.`,
           },
           argSources: { elementId: { kind: "dom", selector: signature } },
-        };
-      },
-    };
-  }
-
-  private readPageTool(): Tool<Record<string, never>> {
-    return {
-      name: "read_page",
-      description: "Read the current page's full text (less trimmed than the snapshot).",
-      schema: z.object({}),
-      execute: async () => {
-        const page = await this.ensurePage();
-        const text = await page.evaluate(() => (document.body.innerText ?? ""));
-        return {
-          ok: true,
-          observation: { summary: `URL: ${page.url()}\n\n${text.slice(0, 6000)}` },
         };
       },
     };

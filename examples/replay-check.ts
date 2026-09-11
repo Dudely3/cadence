@@ -14,7 +14,7 @@
  *     stopped" — so the replay ended early and never reached `complete`.
  */
 import { run, InMemoryTracer, ToolRegistry, completionTool, type Goal, type Session } from "@cadence/core";
-import { accuracyMode, replayMode } from "@cadence/modes";
+import { accuracyMode, replayMode, speedMode } from "@cadence/modes";
 import { NotepadEnv } from "@cadence/env-notepad";
 import { ScriptedModelClient, call, step } from "@cadence/testkit";
 
@@ -88,6 +88,62 @@ const stubErrors = stubbed.turns.flatMap((t) =>
   (t.toolResults ?? []).filter((b) => b.type === "tool_result" && b.isError),
 );
 
+// --- 4. Re-pointed replay: same program, different values ----------------
+// A recording that names what it was about can be replayed FOR SOMETHING ELSE:
+// every occurrence of the recorded value is swapped in the arguments the replay
+// passes. The completion summary is deliberately exempt — it is narration from
+// a model that is not running, and rewriting it would manufacture a sentence
+// nobody wrote.
+const PARAM_GOAL: Goal = { id: "param-test", description: "Log the subject." };
+const PARAM_SCRIPT = [
+  step(
+    "logging Ada",
+    call("append_line", { line: "subject: Ada Lovelace" }),
+    call("complete", { status: "success", summary: "logged Ada Lovelace" }),
+  ),
+];
+const paramRecEnv = new NotepadEnv();
+const paramRecTracer = new InMemoryTracer();
+await run({
+  goal: PARAM_GOAL,
+  env: paramRecEnv,
+  tools: new ToolRegistry([...paramRecEnv.availableTools(), completionTool(PARAM_GOAL)]),
+  model: new ScriptedModelClient(PARAM_SCRIPT),
+  mode: speedMode({ maxSteps: 4 }),
+  tracer: paramRecTracer,
+  params: { subject: "Ada Lovelace" },
+});
+const paramRecorded = paramRecTracer.session!;
+
+const paramEnv = new NotepadEnv();
+const paramTracer = new InMemoryTracer();
+const paramResult = await run({
+  goal: PARAM_GOAL,
+  env: paramEnv,
+  tools: new ToolRegistry([...paramEnv.availableTools(), completionTool(PARAM_GOAL)]),
+  model: new ScriptedModelClient([]),
+  mode: replayMode(paramRecorded, { params: { subject: "Grace Hopper" } }),
+  tracer: paramTracer,
+});
+const paramWorld = (await paramEnv.observe()).summary;
+const replayedArgs = paramTracer.session!.turns.flatMap((t) => t.actions);
+const appended = replayedArgs.find((a) => a.tool === "append_line");
+const completed = replayedArgs.find((a) => a.tool === "complete");
+
+// Sanity: an unchanged replay must still produce the recorded value, or the
+// two assertions above prove nothing about substitution.
+const sameEnv = new NotepadEnv();
+const sameTracer = new InMemoryTracer();
+await run({
+  goal: PARAM_GOAL,
+  env: sameEnv,
+  tools: new ToolRegistry([...sameEnv.availableTools(), completionTool(PARAM_GOAL)]),
+  model: new ScriptedModelClient([]),
+  mode: replayMode(paramRecorded),
+  tracer: sameTracer,
+});
+const sameWorld = (await sameEnv.observe()).summary;
+
 const checks: Array<[string, boolean, string?]> = [
   ["recording has a mixed turn", hasMixedTurn, "test would be vacuous"],
   ["recording has a bookkeeping-only turn", hasBookkeepingOnlyTurn, "test would be vacuous"],
@@ -104,6 +160,15 @@ const checks: Array<[string, boolean, string?]> = [
   ["stub: keeps update_plan", toolsOf(stubbed).flat().includes("update_plan")],
   ["stub: zero tool errors", stubErrors.length === 0, `${stubErrors.length} errors`],
   ["stub: outcome completed", stubResult.outcome === "completed", stubResult.outcome],
+  ["params: recording carries its params", paramRecorded.params?.["subject"] === "Ada Lovelace"],
+  ["params: unchanged replay reproduces the recorded value", sameWorld.includes("Ada Lovelace")],
+  ["params: re-pointed arg was substituted",
+    String(appended?.args["line"] ?? "") === "subject: Grace Hopper", String(appended?.args["line"])],
+  ["params: the WORLD holds the new value", paramWorld.includes("Grace Hopper")],
+  ["params: the world does NOT hold the recorded value", !paramWorld.includes("Ada Lovelace")],
+  ["params: completion summary left as recorded",
+    String(completed?.args["summary"] ?? "").includes("Ada Lovelace"), String(completed?.args["summary"])],
+  ["params: zero model calls", paramResult.totals.llmCalls === 0],
 ];
 
 let failed = 0;

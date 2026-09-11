@@ -40,6 +40,26 @@ export interface DecideInput extends ModeDeps {
   observation: Observation;
 }
 
+/**
+ * What this turn's request will carry beyond the frozen prefix — composed
+ * BEFORE the model is called, so the trace describes the request while it is
+ * still pending.
+ *
+ * This exists for one reason: a stepped run pauses before the model call, and
+ * at that pause the whole request should be on screen. If the mode only
+ * composes its volatile content on the way into client.decide(), the trace at
+ * the pause has an open turn with nothing in it, and the viewer can only draw
+ * the frozen prefix — you find out what you were about to send by sending it.
+ */
+export interface PendingRequest {
+  /** Volatile tail: sent after the last cache breakpoint, replaced each turn. */
+  tail?: string;
+  /** Full state frozen into history (freezeState shapes — see ContextShape). */
+  stateAt?: string;
+  /** A critic verdict produced while composing (accuracy mode). */
+  critic?: { ok: boolean; feedback?: string };
+}
+
 export interface ExecutionMode {
   name: string;
   maxSteps: number;
@@ -59,6 +79,19 @@ export interface ExecutionMode {
    * trace and the wire can never diverge.
    */
   system(input: { goal: Goal; env: Environment; ctx: RunContext }): string;
+
+  /**
+   * Optional: compose this turn's volatile content without calling the model.
+   * The loop calls this right after opening the turn, records the result on
+   * the turn and flushes the trace — so a stepped run can show the entire
+   * request at the pause, and any aux calls this makes (accuracy's critic) are
+   * recorded before the decision rather than during it.
+   *
+   * MUST be idempotent: decide() runs straight afterwards and asks for the
+   * same content, so an implementation memoises onto the open turn rather than
+   * composing (and re-calling a model) twice.
+   */
+  composeTurn?(input: DecideInput): Promise<PendingRequest>;
 
   /** Produce this turn's decision — the model call (or trace read) lives here. */
   decide(input: DecideInput): Promise<ModelResult>;

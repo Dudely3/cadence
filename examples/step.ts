@@ -24,6 +24,11 @@ export function stepped(inner: ExecutionMode): ExecutionMode {
     name: inner.name,
     maxSteps: inner.maxSteps,
     ...(inner.prepare ? { prepare: inner.prepare.bind(inner) } : {}),
+    // Forward composeTurn or the gate defeats its own purpose: the loop calls
+    // it before decide() and flushes the trace, and that write is what puts
+    // the whole pending request on screen AT the pause. Drop it here and a
+    // stepped run pauses on a request the viewer can only half draw.
+    ...(inner.composeTurn ? { composeTurn: inner.composeTurn.bind(inner) } : {}),
     system: inner.system.bind(inner),
     async decide(input: DecideInput): Promise<ModelResult> {
       if (!released) {

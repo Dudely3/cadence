@@ -19,6 +19,12 @@ export interface Tracer {
   /** Record the prompt's static parts (system, tools, initial observation). */
   recordContext?(ctx: SessionContext): void;
   openTurn(): Turn;
+  /**
+   * Persist the session as it stands, mid-turn. The loop calls this once the
+   * mode has composed the pending request, so a stepped run's pause shows the
+   * request that is about to be sent rather than an empty turn.
+   */
+  flush?(): void;
   closeTurn(turn: Turn): void;
   finish(
     outcome: RunOutcome,
@@ -40,6 +46,9 @@ export class InMemoryTracer implements Tracer {
     this.session = { id: id("sess"), goal, mode, turns: [], startedMs: Date.now() };
     return this.session;
   }
+
+  /** Nothing to persist in memory — subclasses that write files override this. */
+  flush(): void {}
 
   recordContext(ctx: SessionContext): void {
     if (!this.session) throw new Error("Tracer.recordContext called before start()");

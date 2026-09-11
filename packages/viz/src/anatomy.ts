@@ -1,4 +1,4 @@
-import { buildMessages } from "@cadence/core";
+import { buildMessages, FROZEN_STATE_PREFIX } from "@cadence/core";
 import type { ContentBlock, Session, Turn } from "@cadence/core";
 
 /**
@@ -93,13 +93,28 @@ function extractLabel(body: string): { label?: string; body: string } {
  *          WRITTEN (request 0's breakpoint didn't cover them).
  *   N ≥ 2: system+tools+goal+turns 0..N-2 are READ; turn N-1 is WRITTEN.
  */
-function regionRules(turnIndex: number): {
+function regionRules(turnIndex: number, cacheAtEnd: boolean): {
   statics: Region;
   goal: Region;
   turn: (t: number) => Region;
 } {
   if (turnIndex === 0) {
     return { statics: "cache-write", goal: "fresh", turn: () => "fresh" };
+  }
+  // "Cache everything" (cacheAt: "end") puts the breakpoint on the last block,
+  // so request N-1 froze its ENTIRE prompt — including the goal, which the
+  // default shape leaves outside the first breakpoint. Everything that was in
+  // the previous request therefore reads from cache; only what this turn added
+  // is written.
+  if (cacheAtEnd) {
+    if (turnIndex === 0) {
+      return { statics: "cache-write", goal: "cache-write", turn: () => "cache-write" };
+    }
+    return {
+      statics: "cached",
+      goal: "cached",
+      turn: (t) => (t === turnIndex - 1 ? "cache-write" : "cached"),
+    };
   }
   return {
     statics: "cached",
@@ -112,8 +127,12 @@ export function requestAnatomy(session: Session, turnIndex: number): RequestAnat
   // The request for turn N is built over the turns closed before it — the
   // exact call the loop makes, over a prefix of the same session.
   const prior: Session = { ...session, turns: session.turns.slice(0, turnIndex) };
-  const messages = buildMessages(prior);
-  const rules = regionRules(turnIndex);
+  // `state` is this turn's frozen state — recorded on the turn, sent as the
+  // trailing message. Passing it here is what makes the drawn request the sent
+  // request for a freezeState run; without it the page copies are invisible.
+  const stateAt = session.turns[turnIndex]?.stateAt;
+  const messages = buildMessages(prior, stateAt !== undefined ? { state: stateAt } : {});
+  const rules = regionRules(turnIndex, session.contextShape?.cacheAt === "end");
 
   const blocks: AnatomyBlock[] = [];
 
@@ -143,8 +162,12 @@ export function requestAnatomy(session: Session, turnIndex: number): RequestAnat
   // Authored comparison traces (e.g. the RAG chatbot mock) can declare that
   // their architecture has no goal message at all — a chatbot's prompt is
   // system → chat, nothing else. Real traces never set this.
-  const hideGoal =
-    (session as { presentation?: { hideGoal?: boolean } }).presentation?.hideGoal === true;
+  const hideGoal = session.presentation?.hideGoal === true;
+  // A chatbot's turn boundary is offset from an agent's: user message in,
+  // answer out. Encoded in a Turn, the NEXT user message lands in toolResults,
+  // and drawing it under "what came back" shows an input as an output. Keep it
+  // out of the response — it still appears in the next request, as history.
+  const resultsAreNextInput = session.presentation?.resultsAreNextInput === true;
 
   let turnOfBlock = -1; // increments when an assistant message begins
   messages.forEach((msg, mi) => {
@@ -156,21 +179,40 @@ export function requestAnatomy(session: Session, turnIndex: number): RequestAnat
       const extracted = extractLabel(bodyOf(b));
       const body = extracted.body;
       let label: string;
+      let frozenRegion: Region | undefined;
+      // Which request does this block belong to? For an agent, a turn's tool
+      // results are that turn's own output, so `turnOfBlock` is right. When the
+      // trace says its results are the NEXT request's input, they belong to the
+      // turn after — otherwise the newest user message reads as "turn 1" while
+      // sitting in the request for turn 2, which is exactly one off.
+      const isResultSlot = msg.role === "user" && !isGoal;
+      const at = isResultSlot && resultsAreNextInput ? turnOfBlock + 1 : turnOfBlock;
       if (isGoal) {
         label = "goal";
+      } else if (b.type === "text" && body.startsWith(FROZEN_STATE_PREFIX)) {
+        // Self-describing: the block says which turn's world it holds, so both
+        // the label and the cache region come from the wire text rather than
+        // from the block's position. A frozen state block sits BEFORE the
+        // assistant message it answered, so the turn-level rule above would
+        // mark the newest one as freshly written when it was frozen a turn ago.
+        const frozenAt = Number(body.slice(FROZEN_STATE_PREFIX.length).split(")")[0]);
+        label = `page state · turn ${frozenAt} — frozen into history`;
+        if (!Number.isNaN(frozenAt) && turnIndex > 0) {
+          frozenRegion = frozenAt < turnIndex ? "cached" : "cache-write";
+        }
       } else if (b.type === "text") {
-        label = `turn ${turnOfBlock} · ${extracted.label ?? "thought"}`;
+        label = `turn ${at} · ${extracted.label ?? "thought"}`;
       } else if (b.type === "tool_use") {
-        label = `turn ${turnOfBlock} · ${b.name}()`;
+        label = `turn ${at} · ${b.name}()`;
       } else {
-        label = `turn ${turnOfBlock} · ${extracted.label ?? "tool result"}`;
+        label = `turn ${at} · ${extracted.label ?? "tool result"}`;
       }
 
       blocks.push({
         id: `${mi}.${bi}`,
         label,
         role: isGoal ? "user" : msg.role,
-        region: isGoal ? rules.goal : rules.turn(turnOfBlock),
+        region: frozenRegion ?? (isGoal ? rules.goal : rules.turn(turnOfBlock)),
         breakpoint: (b as { cache?: boolean }).cache === true,
         chars: body.length,
         body,
@@ -226,7 +268,7 @@ export function requestAnatomy(session: Session, turnIndex: number): RequestAnat
         });
       }
     });
-    turn.toolResults.forEach((b, i) => {
+    if (!resultsAreNextInput) turn.toolResults.forEach((b, i) => {
       if (b.type === "tool_result") {
         const ex = extractLabel(b.content);
         response.push({

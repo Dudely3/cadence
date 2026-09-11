@@ -1,5 +1,5 @@
 import { buildMessages, composeSystem, renderStateTail } from "@cadence/core";
-import type { ExecutionMode } from "@cadence/core";
+import type { DecideInput, ExecutionMode, PendingRequest } from "@cadence/core";
 
 export interface SpeedModeOptions {
   model?: string;
@@ -27,10 +27,24 @@ export function speedMode(opts: SpeedModeOptions = {}): ExecutionMode {
 
     system: ({ goal, env }) => composeSystem(goal, env),
 
-    decide: ({ session, tools, model: client, observation }) => {
-      // Solo-style: current state rides the volatile tail, replaced per turn.
-      const tail = renderStateTail(observation);
+    // Solo-style: current state rides the volatile tail, replaced per turn.
+    // Composed here rather than on the way into the model call so the loop can
+    // record it first — that is what a stepped pause has to show. Idempotent:
+    // if the turn already carries a tail, reuse it.
+    composeTurn: ({
+      session,
+      observation,
+    }: DecideInput): Promise<PendingRequest> => {
       const openTurn = session.turns[session.turns.length - 1];
+      const tail = openTurn?.tail ?? renderStateTail(observation);
+      return Promise.resolve({ tail });
+    },
+
+    decide: ({ session, tools, model: client, observation }) => {
+      const openTurn = session.turns[session.turns.length - 1];
+      // The loop composed and recorded this already; falling back keeps the
+      // mode usable on its own (tests, compare.ts).
+      const tail = openTurn?.tail ?? renderStateTail(observation);
       if (openTurn) openTurn.tail = tail;
 
       return client.decide({

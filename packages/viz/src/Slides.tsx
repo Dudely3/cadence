@@ -8,6 +8,7 @@ import {
   type Block,
   type Inline,
 } from "./slideDeck";
+import type { TraceFileInfo } from "./trace";
 
 /** Talk slides, rendered from `slides/*.md` beside the live anatomy. */
 
@@ -19,6 +20,8 @@ function Spans(props: { spans: Inline[] }): React.JSX.Element {
           <code key={i}>{s.text}</code>
         ) : s.bold ? (
           <strong key={i}>{s.text}</strong>
+        ) : s.italic ? (
+          <em key={i}>{s.text}</em>
         ) : (
           <span key={i}>{s.text}</span>
         ),
@@ -47,6 +50,14 @@ function BlockView(props: { block: Block }): React.JSX.Element | null {
             <li key={i}><Spans spans={it} /></li>
           ))}
         </ul>
+      );
+    case "ol":
+      return (
+        <ol className="sl-ul sl-ol">
+          {b.items.map((it, i) => (
+            <li key={i}><Spans spans={it} /></li>
+          ))}
+        </ol>
       );
     case "code":
       return <pre className="sl-code">{b.text}</pre>;
@@ -80,10 +91,82 @@ function BlockView(props: { block: Block }): React.JSX.Element | null {
   }
 }
 
+/** "ladder-3-cleaned · 2 turns ✓" — the chip has to be readable at a glance. */
+function chipLabel(name: string, info: TraceFileInfo | undefined): string {
+  const id = name.replace(/\.json$/, "");
+  if (!info?.goalId) return id;
+  const mark =
+    info.outcome === "completed" ? "✓" : info.outcome === "error" ? "✕" : info.outcome === "max_steps" ? "⏱" : "";
+  return `${info.goalId} · ${info.turns ?? 0} turns ${mark}`.trim();
+}
+
+/**
+ * The recordings this slide is about. Clicking one opens it in the anatomy
+ * beside the slide; the ✕ removes a run this machine added (frontmatter
+ * bindings travel with the talk and are edited in the file, not here).
+ */
+function SessionStrip(props: {
+  sessions: string[];
+  pinned: string[];
+  traces: TraceFileInfo[];
+  current: string;
+  onOpen: (name: string) => void;
+  onUnpin: (name: string) => void;
+}): React.JSX.Element | null {
+  if (props.sessions.length === 0) return null;
+  const byName = new Map(props.traces.map((t) => [t.name, t]));
+  return (
+    <div className="sl-sessions">
+      <span className="sl-sessions-label">sessions</span>
+      {props.sessions.map((name) => {
+        const info = byName.get(name);
+        const missing = info === undefined;
+        return (
+          <span
+            key={name}
+            className={`sl-chip${props.current === name ? " sl-chip-open" : ""}${missing ? " sl-chip-missing" : ""}`}
+          >
+            <button
+              className="sl-chip-open-btn"
+              onClick={() => props.onOpen(name)}
+              disabled={missing}
+              title={missing ? `${name} is not in traces/ on this machine` : info.goalDescription}
+            >
+              {missing ? `${name.replace(/\.json$/, "")} (missing)` : chipLabel(name, info)}
+            </button>
+            {props.pinned.includes(name) && (
+              <button
+                className="sl-chip-x"
+                onClick={() => props.onUnpin(name)}
+                title="forget this recording on this slide"
+              >
+                ✕
+              </button>
+            )}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 export function Slides(props: {
   index: number;
   onIndex: (i: number) => void;
   session: Session | undefined;
+  /** Recordings bound to the current slide: frontmatter first, then live pins. */
+  sessions: string[];
+  /** Which of those came from a live run, so only those can be removed. */
+  pinned: string[];
+  traces: TraceFileInfo[];
+  currentTrace: string;
+  onOpenSession: (name: string) => void;
+  onUnpin: (name: string) => void;
+  /** Whether moving between slides also moves the open trace. */
+  linked: boolean;
+  onToggleLink: () => void;
+  /** Open the run panel with this slide's run loaded. */
+  onRun: (() => void) | undefined;
 }): React.JSX.Element {
   const total = SLIDES.length;
   const current = SLIDES[Math.min(props.index, Math.max(0, total - 1))];
@@ -142,16 +225,45 @@ export function Slides(props: {
         >
           {SLIDES.map((s) => (
             <option key={s.name} value={s.index}>
+              {/* What each slide carries, at a glance: how many recordings are
+                  bound to it, and whether it can launch a run. */}
               {s.index + 1}. {s.title}
+              {s.sessions.length > 0 ? ` · ${s.sessions.length} rec` : ""}
+              {s.run ? " · ▶" : ""}
             </option>
           ))}
         </select>
+        <button
+          className={`follow${props.linked ? " follow-on" : ""}`}
+          onClick={props.onToggleLink}
+          title={
+            props.linked
+              ? "changing slides opens that slide's recording — click to stop"
+              : "changing slides leaves the open trace alone — click to link them"
+          }
+        >
+          {props.linked ? "⇄ linked" : "⇄ link"}
+        </button>
+        {current.run && props.onRun && (
+          <button className="run-btn run-btn-primary" onClick={props.onRun} title="load this slide's run">
+            ▶ {current.run.label ?? "run this slide"}
+          </button>
+        )}
         {unresolved && (
           <span className="chip chip-warning chip-mini" title="a {{placeholder}} had no value in this trace">
             unresolved value
           </span>
         )}
       </div>
+
+      <SessionStrip
+        sessions={props.sessions}
+        pinned={props.pinned}
+        traces={props.traces}
+        current={props.currentTrace}
+        onOpen={props.onOpenSession}
+        onUnpin={props.onUnpin}
+      />
 
       <article className="sl-body">
         {blocks.map((b, i) => (

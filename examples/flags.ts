@@ -33,6 +33,12 @@ export interface DemoFlags {
 export function demoFlags(
   argv: string[] = process.argv.slice(2),
   env: NodeJS.ProcessEnv = process.env,
+  /**
+   * Flags the CALLER parses itself (each takes one value). Without this, an
+   * example with its own flag gets two warnings saying the flag was ignored —
+   * while it works — which on stage reads as a broken run.
+   */
+  ownFlags: string[] = [],
 ): DemoFlags {
   let step: boolean | undefined;
   let headed: boolean | undefined;
@@ -45,6 +51,11 @@ export function demoFlags(
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i] ?? "";
+    // Skip the caller's own flag and the value that follows it.
+    if (ownFlags.some((f) => arg === `--${f}` || arg.startsWith(`--${f}=`))) {
+      if (!arg.includes("=")) i++;
+      continue;
+    }
     if (!arg.startsWith("--")) {
       console.warn(`ignoring unexpected argument "${arg}"`);
       continue;

@@ -45,6 +45,15 @@ export interface Turn {
    * per-turn content lands past the cache line so the frozen prefix survives.
    */
   tail?: string;
+  /**
+   * Full state frozen INTO history for this turn. Only set when the session's
+   * contextShape says to freeze state (rung 1) — the entire point of the
+   * Solo-style placement is that state never lands here. Recorded so the trace
+   * stays a complete account of what was sent, and rendered by the SAME
+   * buildMessages the loop uses, so the viewer draws a naive run correctly
+   * without knowing anything about naive mode.
+   */
+  stateAt?: string;
   usage?: Usage;
   timing: { startedMs: number; durationMs: number };
 }
@@ -58,11 +67,78 @@ export interface Turn {
  * context (buildMessages renders requests from it), the replay program, and
  * the visualization the context viewer draws.
  */
+/**
+ * How this session's requests are laid out — the part of prompt construction
+ * that differs between modes, recorded as DATA on the session.
+ *
+ * This exists so there is still exactly one message builder. A mode that hand-
+ * rolls its own messages puts the viewer (which can only call buildMessages)
+ * one step behind the wire, and the first thing you notice is a block that was
+ * sent but isn't drawn. Shape belongs in the trace, not in a second renderer.
+ */
+export interface ContextShape {
+  /**
+   * Freeze each turn's full state into history instead of re-observing into a
+   * volatile tail. Rung 1 of the context ladder; nothing should ship this.
+   */
+  freezeState?: boolean;
+  /**
+   * Where the cache breakpoint goes. "last-turn" (default) anchors it on the
+   * last closed turn, so the frozen prefix is stable and the fresh tail sits
+   * past it. "end" is the "cache everything" instinct: the breakpoint rides
+   * the very last block of the request.
+   */
+  cacheAt?: "last-turn" | "end";
+}
+
+/**
+ * Hints for AUTHORED comparison traces only — the hand-written recordings that
+ * illustrate a different architecture (a RAG chatbot, a legacy JSON-in-text
+ * agent) so it can be put beside a real one in the viewer. A live run never
+ * sets these.
+ *
+ * They exist because a Turn is shaped for an agent loop — assistant output,
+ * then the results of the actions it took — and another architecture's turn
+ * boundary can fall somewhere else. Rather than distort the drawing to fit, the
+ * trace says which convention it is using.
+ */
+export interface SessionPresentation {
+  /** No goal message: a chatbot's prompt is system → chat, and nothing else. */
+  hideGoal?: boolean;
+  /**
+   * The user-side blocks recorded on a turn are the NEXT request's input, not
+   * this turn's output.
+   *
+   * A chatbot turn is: user message (+ whatever was retrieved for it) goes in,
+   * an answer comes out. An agent Turn is the other way round: the assistant
+   * acts, then results come back. Encoding the former in the latter leaves the
+   * next user message sitting in `toolResults`, where the viewer would draw it
+   * under "what came back" — showing an input as an output.
+   */
+  resultsAreNextInput?: boolean;
+}
+
 export interface Session {
   id: string;
   goal: Goal;
   mode: string;
   turns: Turn[];
+  /** Request layout for this run. Absent means the default Solo-style shape. */
+  contextShape?: ContextShape;
+  /** Drawing hints for authored comparison traces. Live runs never set this. */
+  presentation?: SessionPresentation;
+  /**
+   * The named values this run was about — "the item is Titanium Tent Stakes".
+   *
+   * Recorded so a replay can be re-pointed at different ones: replay re-issues
+   * the recorded calls, and anywhere a recorded value appears in an argument or
+   * in a DOM selector it can be swapped for the new value. One paid run becomes
+   * a program you can run again for a different input, with no model at all.
+   *
+   * Only meaningful if the values are distinctive enough to find unambiguously
+   * in what the run did — see replayMode's `params` option.
+   */
+  params?: Record<string, string>;
   startedMs: number;
   /** Rendered system prompt, recorded before the first turn. */
   system?: string;

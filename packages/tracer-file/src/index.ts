@@ -97,7 +97,12 @@ export class FileTracer extends InMemoryTracer {
     return this.result;
   }
 
-  private flush(): void {
+  /**
+   * Write the live file now. Public because the loop calls it mid-turn, once
+   * the mode has composed the pending request — that write is what lets a
+   * stepped run show the whole request before the model sees it.
+   */
+  override flush(): void {
     this.write(this.liveFile);
   }
 

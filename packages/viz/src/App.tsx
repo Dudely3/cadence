@@ -1,21 +1,33 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { Turn } from "@cadence/core";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTrace, useTraceList, useTraceSummaries, type TraceFileInfo } from "./trace";
 import { requestAnatomy, approxTokens, fmtTokens, REGION_LABEL, type AnatomyBlock } from "./anatomy";
-import { TokenStrip } from "./TokenStrip";
+import { TurnList } from "./TurnList";
 import { BlockMap } from "./BlockMap";
 import { Sessions } from "./Sessions";
 import { RunPanel } from "./RunPanel";
 import { Slides } from "./Slides";
+import { SLIDES, slidesForTrace } from "./slideDeck";
+import { usePins } from "./pins";
+import { Grip, usePaneWidth } from "./resize";
 
 /** Run-state chip: icon + label always — never color alone. */
 function OutcomeChip(props: {
   outcome?: string;
   running: boolean;
   stalled: boolean;
+  /** Newest turn is composed but not sent — a stepped run's pause looks like this. */
+  pending: boolean;
 }): React.JSX.Element {
   // A trace with no result isn't necessarily live: a killed run leaves one
   // behind forever. Say "stalled" rather than claiming it's still going.
+  //
+  // But a stepped run parked at the presenter gate ALSO stops writing, and it
+  // is the state you spend the most time in on stage — the request is built,
+  // nothing has been sent. The file cannot tell that apart from a process
+  // killed mid-turn, so name what is true of both rather than guessing.
+  if (props.stalled && props.pending) {
+    return <span className="chip chip-warning">⏸ waiting — request built, nothing sent</span>;
+  }
   if (props.stalled) return <span className="chip chip-serious">■ stalled — no result</span>;
   if (props.running) return <span className="chip chip-running">● running</span>;
   switch (props.outcome) {
@@ -30,31 +42,6 @@ function OutcomeChip(props: {
     default:
       return <span className="chip">–</span>;
   }
-}
-
-function TurnRow(props: {
-  turn: Turn;
-  selected: boolean;
-  onSelect: () => void;
-}): React.JSX.Element {
-  const { turn } = props;
-  const firstTool = turn.actions[0]?.tool ?? (turn.closed ? "(no tool call)" : "…");
-  const more = turn.actions.length > 1 ? ` +${turn.actions.length - 1}` : "";
-  return (
-    <button className={`turn-row${props.selected ? " turn-row-selected" : ""}`} onClick={props.onSelect}>
-      <span className="turn-row-index">{turn.index}</span>
-      <span className="turn-row-tool">
-        {firstTool}
-        {more}
-        {!turn.closed && <span className="live-dot" title="turn in flight" />}
-      </span>
-      <span className="turn-row-stats">
-        {turn.usage
-          ? `${fmtTokens((turn.usage.cacheReadTokens ?? 0) + turn.usage.inputTokens)}→${fmtTokens(turn.usage.outputTokens)}`
-          : "—"}
-      </span>
-    </button>
-  );
 }
 
 function BlockCard(props: {
@@ -99,6 +86,22 @@ export function App(): React.JSX.Element {
   const [showRun, setShowRun] = useState(false);
   const [showSlides, setShowSlides] = useState(false);
   const [slide, setSlide] = useState(0);
+  // Moving between slides moves the viewer to that slide's recording. On by
+  // default — it is the reason the binding exists — but a toggle, because
+  // scrubbing back through slides mid-demo shouldn't yank the trace away.
+  const [linked, setLinked] = useState(true);
+  const { pins, refresh: refreshPins, unpin } = usePins();
+
+  // Draggable widths for the side panels; the anatomy pane takes the rest.
+  // Minimums are hard: with three panels up on a 1280px screen the floors sum
+  // to 900px, so nothing can be dragged to nothing and lost mid-talk.
+  //
+  // Declared HERE, with the other hooks, and not next to the layout they
+  // describe: there is an early return further down for "no trace yet", and a
+  // hook after it runs on some renders and not others.
+  const slidesPane = usePaneWidth("slides", 460, 280, 900);
+  const runPane = usePaneWidth("run", 420, 280, 900);
+  const turnsPane = usePaneWidth("turns", 240, 120, 420);
 
   // The listing carries only file stats; fold in each session's summary so the
   // picker and the Sessions view can describe a run instead of naming a file.
@@ -158,10 +161,67 @@ export function App(): React.JSX.Element {
     setFollow(false);
   }, [envelope, running, follow]);
 
+  /** Open a trace from the top: newest turn, nothing pinned, no stale block. */
+  const openTrace = useCallback((name: string) => {
+    setTraceName(name);
+    setFollow(name === "live.json");
+    setTurnIndex(0);
+    setBlockId(null);
+  }, []);
+
+  // --- the slide the deck is on, and the recordings it is about ------------
+  const slideDef = SLIDES[Math.min(slide, Math.max(0, SLIDES.length - 1))];
+  const slideSessions = useMemo(() => {
+    const authored = slideDef?.sessions ?? [];
+    const live = (slideDef ? pins[slideDef.name] : undefined) ?? [];
+    return [...authored, ...live.filter((n) => !authored.includes(n))];
+  }, [slideDef, pins]);
+
+  // Follow the deck: landing on a slide opens the first recording bound to it.
+  // Applied ONCE per slide (the ref), so clicking another of the slide's
+  // session chips, or pinning a new run to it, doesn't snap the view back.
+  const appliedSlide = useRef<number | null>(null);
+  // The trace the link itself opened. The reverse link below must ignore it,
+  // or the two effects hand the view back and forth forever.
+  const linkOpened = useRef<string | null>(null);
+  useEffect(() => {
+    if (!showSlides || !linked) return;
+    if (appliedSlide.current === slide) return;
+    appliedSlide.current = slide;
+    const first = slideSessions[0];
+    if (first && first !== traceName) {
+      linkOpened.current = first;
+      openTrace(first);
+    }
+  }, [slide, linked, showSlides, slideSessions, traceName, openTrace]);
+
+  // --- and the other direction: which slides is the OPEN trace about? -------
+  const slidesForOpen = useMemo(() => slidesForTrace(traceName, pins), [traceName, pins]);
+
+  /** Move the deck to a slide without letting the forward link fight it. */
+  const goToSlide = useCallback((index: number) => {
+    appliedSlide.current = index;
+    setSlide(index);
+  }, []);
+
+  // Pick a session and the deck follows it — but only when the answer is
+  // unambiguous. One recording here backs seven slides; guessing which one you
+  // meant would move the deck out from under you more often than it helped.
+  useEffect(() => {
+    if (!linked) return;
+    if (linkOpened.current === traceName) return; // this came FROM the deck
+    if (slidesForOpen.length !== 1) return;
+    goToSlide(slidesForOpen[0]!.index);
+  }, [traceName, linked, slidesForOpen, goToSlide]);
+
   const anatomy = useMemo(
     () => (session ? requestAnatomy(session, selected) : null),
     [session, selected],
   );
+  // A turn that is open and has no usage yet has not been sent. Stepped runs
+  // pause exactly here, so say "about to be sent" rather than "went on the
+  // wire" — the whole point of the pause is reading it before it goes.
+  const pending = anatomy?.turn !== undefined && !anatomy.turn.closed && !anatomy.turn.usage;
   const selectedBlock =
     anatomy?.blocks.find((b) => b.id === blockId) ??
     anatomy?.response.find((b) => b.id === blockId) ??
@@ -171,6 +231,18 @@ export function App(): React.JSX.Element {
     setFollow(false);
     setTurnIndex(i);
     setBlockId(null);
+  };
+
+  /**
+   * Link the deck to the traces. Turning it ON jumps to the current slide's
+   * recording straight away (that is what the button says it does), which the
+   * once-per-slide guard would otherwise suppress.
+   */
+  const toggleLink = (): void => {
+    setLinked((v) => {
+      if (!v) appliedSlide.current = null;
+      return !v;
+    });
   };
 
   /** Toggle follow without moving the view: dropping follow keeps this turn. */
@@ -226,6 +298,24 @@ export function App(): React.JSX.Element {
   // log or list scrolls inside them, and .viz-root's min-height:100vh would
   // otherwise let tall content push the header away.
   const panelOpen = showRun || showSessions || showSlides;
+  // Slides, run controls and anatomy can all be up at once — three columns is
+  // tight but it is the layout that never needs a terminal or a second window.
+  const panes = 1 + (showSlides ? 1 : 0) + (showRun ? 1 : 0);
+
+  // Widths go out as CUSTOM PROPERTIES, not as a grid-template-columns
+  // string. An inline template would beat the narrow-screen media queries that
+  // stack these panes into rows — inline styles outrank the stylesheet — and
+  // the layout would stay in three unreadable columns on a small display.
+  // Sized panes are named in order, so the CSS doesn't need to know which
+  // panels are open, only how many.
+  const sidePanes = [
+    ...(showSlides ? [slidesPane.width] : []),
+    ...(showRun ? [runPane.width] : []),
+  ];
+  const splitVars = {
+    "--pane-a": `${sidePanes[0] ?? 0}px`,
+    "--pane-b": `${sidePanes[1] ?? 0}px`,
+  } as React.CSSProperties;
 
   return (
     <div className={`viz-root${panelOpen ? " viz-root-fixed" : ""}`}>
@@ -261,6 +351,37 @@ export function App(): React.JSX.Element {
         >
           ☰ sessions
         </button>
+        {/* Which slides this recording is about. Always clickable; the
+            auto-jump above only fires when there is exactly one. */}
+        {slidesForOpen.length > 0 && (
+          <span className="slide-links">
+            {slidesForOpen.slice(0, 4).map((s) => (
+              <button
+                key={s.name}
+                className={`slide-link${s.index === slide ? " slide-link-on" : ""}`}
+                title={`${s.index + 1}. ${s.title}`}
+                onClick={() => {
+                  goToSlide(s.index);
+                  setShowSlides(true);
+                  setShowSessions(false);
+                }}
+              >
+                ▤ {s.index + 1}
+              </button>
+            ))}
+            {slidesForOpen.length > 4 && (
+              <span
+                className="slide-link-more"
+                title={slidesForOpen
+                  .slice(4)
+                  .map((s) => `${s.index + 1}. ${s.title}`)
+                  .join("\n")}
+              >
+                +{slidesForOpen.length - 4}
+              </span>
+            )}
+          </span>
+        )}
         <select value={traceName} onChange={(e) => setTraceName(e.target.value)}>
           {!files.some((f) => f.name === traceName) && <option value={traceName}>{traceName}</option>}
           {described.map((f) => (
@@ -291,6 +412,7 @@ export function App(): React.JSX.Element {
           {...(envelope.result ? { outcome: envelope.result.outcome } : {})}
           running={running}
           stalled={stalled}
+          pending={pending}
         />
         <span className="chip">{session.mode} mode</span>
         <span className="goal" title={session.goal.description}>
@@ -303,30 +425,58 @@ export function App(): React.JSX.Element {
           files={described}
           current={traceName}
           onOpen={(name) => {
-            setTraceName(name);
             setShowSessions(false);
             setShowRun(false);
-            setFollow(name === "live.json");
-            setTurnIndex(0);
-            setBlockId(null);
+            openTrace(name);
           }}
         />
       ) : (
-        <div className={showRun || showSlides ? "split" : "solo"}>
-          {showSlides && <Slides index={slide} onIndex={setSlide} session={session} />}
+        <div
+          className={panes > 1 ? `split split-${panes}` : "solo"}
+          {...(panes > 1 ? { style: splitVars } : {})}
+        >
+          {showSlides && (
+            <Slides
+              index={slide}
+              onIndex={setSlide}
+              session={session}
+              sessions={slideSessions}
+              pinned={(slideDef ? pins[slideDef.name] : undefined) ?? []}
+              traces={described}
+              currentTrace={traceName}
+              onOpenSession={openTrace}
+              onUnpin={(name) => {
+                if (slideDef) void unpin(slideDef.name, name);
+              }}
+              linked={linked}
+              onToggleLink={toggleLink}
+              onRun={slideDef?.run ? () => setShowRun(true) : undefined}
+            />
+          )}
+          {showSlides && (
+            <Grip label="slides" onDrag={slidesPane.onDrag} onReset={slidesPane.reset} />
+          )}
           {/* Run controls sit BESIDE the anatomy, not instead of it: the point
               of stepping is watching the context grow as each turn lands. */}
           {showRun && (
             <RunPanel
+              // The preset follows the visible slide, so "run" on the slide
+              // about rung 3 runs rung 3 — and nothing at all when the deck
+              // is closed, which is the plain panel it has always been.
+              preset={showSlides ? slideDef?.run : undefined}
+              presetKey={showSlides ? slideDef?.name : undefined}
+              presetTitle={showSlides ? slideDef?.title : undefined}
+              // The server pins a run's recordings to the slide it was
+              // launched from; this just picks the new file up.
+              onTraces={() => void refreshPins()}
               onRunStarted={() => {
                 // A new run streams into live.json — follow it as it happens.
-                setTraceName("live.json");
+                openTrace("live.json");
                 setFollow(true);
-                setTurnIndex(0);
-                setBlockId(null);
               }}
             />
           )}
+          {showRun && <Grip label="run panel" onDrag={runPane.onDrag} onReset={runPane.reset} />}
           {/* One grid child per column: everything on the anatomy side lives in
               this pane, or auto-placement scatters it across the split. */}
           <div className="main-pane">
@@ -340,7 +490,9 @@ export function App(): React.JSX.Element {
           {view === "blocks" ? (
         <div className="present">
           <div className="present-head">
-            {session.mode === "replay" ? `turn ${selected} · replay — no model requests` : `request for turn ${selected}`}
+            {session.mode === "replay"
+              ? `turn ${selected} · replay — no model requests`
+              : `request for turn ${selected}${pending ? " · about to be sent" : ""}`}
             <span className="hint"> · ← → scrub turns · v for detail view</span>
           </div>
           {anatomy && <BlockMap anatomy={anatomy} />}
@@ -360,29 +512,26 @@ export function App(): React.JSX.Element {
           </div>
         </div>
       ) : (
-      <div className="columns">
-        <aside className="turns">
-          <div className="pane-title">
-            requests
-            <button
-              className={`follow${follow ? " follow-on" : ""}`}
-              onClick={toggleFollow}
-              title="jump to the newest request as it arrives (f)"
-            >
-              {follow ? "following" : "follow"}
-            </button>
-          </div>
-          {turns.map((t) => (
-            <TurnRow key={t.index} turn={t} selected={t.index === selected} onSelect={() => pick(t.index)} />
-          ))}
-          {turns.length === 0 && <p className="hint">request 0 below is about to be sent…</p>}
-        </aside>
+      <div
+        className="columns"
+        style={{ "--pane-turns": `${turnsPane.width}px` } as React.CSSProperties}
+      >
+        <TurnList
+          turns={turns}
+          selected={selected}
+          follow={follow}
+          onToggleFollow={toggleFollow}
+          onSelect={pick}
+        />
+        <Grip label="requests" onDrag={turnsPane.onDrag} onReset={turnsPane.reset} />
 
         <section className="stack">
           <div className="pane-title">
             {session.mode === "replay"
               ? `turn ${selected} — REPLAY: no request was sent to any model; actions re-executed from the trace`
-              : `request for turn ${selected} — exactly what went on the wire`}
+              : pending
+                ? `request for turn ${selected} — exactly what is about to go on the wire`
+                : `request for turn ${selected} — exactly what went on the wire`}
           </div>
           {anatomy?.blocks.map((b, i) => (
             <div key={b.id}>
@@ -436,11 +585,6 @@ export function App(): React.JSX.Element {
         </div>
       )}
 
-      {view === "anatomy" && (
-        <footer>
-          <TokenStrip turns={turns} selected={selected} onSelect={pick} />
-        </footer>
-      )}
     </div>
   );
 }

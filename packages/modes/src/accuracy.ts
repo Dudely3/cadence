@@ -1,10 +1,16 @@
 import { z } from "zod";
-import { buildMessages, composeSystem, renderStateTail, ToolRegistry } from "@cadence/core";
+import {
+  buildMessages,
+  composeSystem,
+  renderStateTail,
+  ToolRegistry,
+} from "@cadence/core";
 import type {
   DecideInput,
   ExecutionMode,
   ModelClient,
   ModelResult,
+  PendingRequest,
   Session,
   Tool,
   Turn,
@@ -86,7 +92,11 @@ function renderPlan(plan: PlanStep[]): string {
 }
 
 /** The mode's own bookkeeping tool — registered in prepare(), not by the env. */
-function updatePlanTool(): Tool<{ stepId: string; status: "done" | "failed"; note?: string }> {
+function updatePlanTool(): Tool<{
+  stepId: string;
+  status: "done" | "failed";
+  note?: string;
+}> {
   return {
     name: "update_plan",
     description:
@@ -94,7 +104,10 @@ function updatePlanTool(): Tool<{ stepId: string; status: "done" | "failed"; not
     schema: z.object({
       stepId: z.string().describe("The id of the plan step."),
       status: z.enum(["done", "failed"]),
-      note: z.string().optional().describe("One line on the outcome, if useful."),
+      note: z
+        .string()
+        .optional()
+        .describe("One line on the outcome, if useful."),
     }),
     execute: async (_env, args, ctx) => {
       const s = state(ctx.scratch);
@@ -121,10 +134,14 @@ function updatePlanTool(): Tool<{ stepId: string; status: "done" | "failed"; not
             ok: false,
             error: `dependencies not done: ${unmet.join(", ")}`,
             observation: {
-              summary:
-                `Cannot mark "${step.id}" done — it depends on ${unmet
-                  .map((id) => `"${id}" (${s.plan.find((p) => p.id === id)?.status})`)
-                  .join(", ")}. Finish the dependencies first, or mark "${step.id}" failed if its branch is being abandoned.\n\nPlan:\n${renderPlan(s.plan)}`,
+              summary: `Cannot mark "${step.id}" done — it depends on ${unmet
+                .map(
+                  (id) =>
+                    `"${id}" (${s.plan.find((p) => p.id === id)?.status})`,
+                )
+                .join(
+                  ", ",
+                )}. Finish the dependencies first, or mark "${step.id}" failed if its branch is being abandoned.\n\nPlan:\n${renderPlan(s.plan)}`,
             },
           };
         }
@@ -169,7 +186,9 @@ export function accuracyMode(opts: AccuracyModeOptions = {}): ExecutionMode {
     if (!def) return null;
     const res = await client.decide({
       system: input.system,
-      messages: [{ role: "user", content: [{ type: "text", text: input.user }] }],
+      messages: [
+        { role: "user", content: [{ type: "text", text: input.user }] },
+      ],
       tools: [def],
       toolChoice: { type: "tool", name: input.tool.name },
       model,
@@ -180,6 +199,95 @@ export function accuracyMode(opts: AccuracyModeOptions = {}): ExecutionMode {
     (session.auxUsage ??= []).push(res.usage);
     return res.toolUses[0]?.input ?? null;
   }
+
+  /**
+   * Everything this turn's request carries beyond the frozen prefix — the
+   * critic call included. Composed BEFORE the decision so the loop can
+   * record it and flush: at a stepped pause the critic's verdict is already
+   * on screen, in the tail, where the model will read it.
+   *
+   * Idempotent, and it has to be: decide() runs immediately afterwards and
+   * asks for the same thing. A second critic call would be a second Opus
+   * request per turn, silently doubling the mode's cost.
+   */
+  const composeTurn = async (input: DecideInput): Promise<PendingRequest> => {
+    const { session, goal } = input;
+    const s = state(input.ctx.scratch);
+    const openTurn = session.turns[session.turns.length - 1];
+    if (openTurn?.tail !== undefined) {
+      return {
+        tail: openTurn.tail,
+        ...(openTurn.critic ? { critic: openTurn.critic } : {}),
+      };
+    }
+    const lastClosed = [...session.turns].reverse().find((t) => t.closed);
+
+    // --- Critic: review the previous turn before deciding this one -------
+    let verdict: { ok: boolean; feedback?: string } | undefined;
+    if (useCritic && lastClosed && lastClosed.actions.length > 0) {
+      const verdictTool: Tool<{ ok: boolean; feedback?: string }> = {
+        name: "verdict",
+        description: "Record the verdict on the last step.",
+        schema: z.object({
+          ok: z.boolean().describe("Did the step do what it intended?"),
+          feedback: z
+            .string()
+            .optional()
+            .describe("If not ok: what went wrong and what to try."),
+        }),
+        execute: async () => ({
+          ok: true,
+          observation: { summary: "recorded" },
+        }),
+      };
+      const raw = await forcedToolCall(input.model, session, {
+        system: CRITIC_SYSTEM,
+        user:
+          `Goal: ${goal.description}` +
+          (goal.successCriteria
+            ? `\nSuccess criteria: ${goal.successCriteria}`
+            : "") +
+          `\n\nPlan state:\n${renderPlan(s.plan)}\n\nLast step:\n${describeTurn(lastClosed)}` +
+          `\n\nCurrent state after the step:\n${input.observation.summary}`,
+        tool: verdictTool as Tool,
+      });
+      if (raw && typeof raw["ok"] === "boolean") {
+        verdict = { ok: raw["ok"] as boolean };
+        if (typeof raw["feedback"] === "string" && raw["feedback"]) {
+          verdict.feedback = raw["feedback"];
+        }
+      }
+    }
+
+    // --- Failure budget: errors or a failed verdict count against it -----
+    const turnHadError = lastClosed?.toolResults.some(
+      (b) => b.type === "tool_result" && b.isError,
+    );
+    if (turnHadError || verdict?.ok === false) s.consecutiveFailures += 1;
+    else if (lastClosed) s.consecutiveFailures = 0;
+
+    // --- Volatile tail: past the cache line, recorded on the turn ---------
+    // Solo's full volatile section: current state + plan progress (Task
+    // Decomposition Progress) + critic feedback + budget steering.
+    const tailParts: string[] = [renderStateTail(input.observation)];
+    if (s.plan.length > 0) {
+      tailParts.push(`Plan progress:\n${renderPlan(s.plan)}`);
+    }
+    if (verdict && !verdict.ok) {
+      tailParts.push(
+        `[critic] ${verdict.feedback ?? "The last step did not achieve its intent."} Address this before proceeding.`,
+      );
+    }
+    if (s.consecutiveFailures >= failureBudget) {
+      tailParts.push(
+        `You have had ${s.consecutiveFailures} consecutive unproductive steps. If the goal cannot be accomplished, call complete with status "failure" and explain why instead of retrying further.`,
+      );
+    }
+    return {
+      tail: tailParts.join("\n\n"),
+      ...(verdict ? { critic: verdict } : {}),
+    };
+  };
 
   return {
     name: "accuracy",
@@ -211,7 +319,10 @@ export function accuracyMode(opts: AccuracyModeOptions = {}): ExecutionMode {
             .min(1)
             .describe("2-6 ordered, concrete steps."),
         }),
-        execute: async () => ({ ok: true, observation: { summary: "plan recorded" } }),
+        execute: async () => ({
+          ok: true,
+          observation: { summary: "plan recorded" },
+        }),
       };
 
       const toolList = tools
@@ -225,9 +336,13 @@ export function accuracyMode(opts: AccuracyModeOptions = {}): ExecutionMode {
       });
 
       const steps = (
-        input as { steps?: Array<{ id: string; title: string; dependsOn?: string[] }> } | null
+        input as {
+          steps?: Array<{ id: string; title: string; dependsOn?: string[] }>;
+        } | null
       )?.steps;
-      const raw = steps?.length ? steps : [{ id: "s1", title: goal.description }];
+      const raw = steps?.length
+        ? steps
+        : [{ id: "s1", title: goal.description }];
       // Sanitize dependencies: only EARLIER step ids are honored (drops
       // self-references, unknown ids, and forward edges — no cycles possible
       // by construction).
@@ -235,7 +350,12 @@ export function accuracyMode(opts: AccuracyModeOptions = {}): ExecutionMode {
       s.plan = raw.map((p) => {
         const dependsOn = (p.dependsOn ?? []).filter((id) => seen.has(id));
         seen.add(p.id);
-        return { id: p.id, title: p.title, status: "pending" as const, dependsOn };
+        return {
+          id: p.id,
+          title: p.title,
+          status: "pending" as const,
+          dependsOn,
+        };
       });
     },
 
@@ -249,68 +369,20 @@ export function accuracyMode(opts: AccuracyModeOptions = {}): ExecutionMode {
       return composeSystem(goal, env, ACCURACY_PREAMBLE + planBlock);
     },
 
+    composeTurn,
+
     async decide(input: DecideInput): Promise<ModelResult> {
-      const { session, tools, model: client, goal } = input;
-      const s = state(input.ctx.scratch);
-      const openTurn = session.turns[session.turns.length - 1];
-      const lastClosed = [...session.turns].reverse().find((t) => t.closed);
-
-      // --- Critic: review the previous turn before deciding this one -------
-      let verdict: { ok: boolean; feedback?: string } | undefined;
-      if (useCritic && lastClosed && lastClosed.actions.length > 0) {
-        const verdictTool: Tool<{ ok: boolean; feedback?: string }> = {
-          name: "verdict",
-          description: "Record the verdict on the last step.",
-          schema: z.object({
-            ok: z.boolean().describe("Did the step do what it intended?"),
-            feedback: z.string().optional().describe("If not ok: what went wrong and what to try."),
-          }),
-          execute: async () => ({ ok: true, observation: { summary: "recorded" } }),
-        };
-        const raw = await forcedToolCall(client, session, {
-          system: CRITIC_SYSTEM,
-          user:
-            `Goal: ${goal.description}` +
-            (goal.successCriteria ? `\nSuccess criteria: ${goal.successCriteria}` : "") +
-            `\n\nPlan state:\n${renderPlan(s.plan)}\n\nLast step:\n${describeTurn(lastClosed)}` +
-            `\n\nCurrent state after the step:\n${input.observation.summary}`,
-          tool: verdictTool as Tool,
-        });
-        if (raw && typeof raw["ok"] === "boolean") {
-          verdict = { ok: raw["ok"] as boolean };
-          if (typeof raw["feedback"] === "string" && raw["feedback"]) {
-            verdict.feedback = raw["feedback"];
-          }
-        }
-      }
-
-      // --- Failure budget: errors or a failed verdict count against it -----
-      const turnHadError = lastClosed?.toolResults.some(
-        (b) => b.type === "tool_result" && b.isError,
-      );
-      if (turnHadError || verdict?.ok === false) s.consecutiveFailures += 1;
-      else if (lastClosed) s.consecutiveFailures = 0;
-
-      // --- Volatile tail: past the cache line, recorded on the turn ---------
-      // Solo's full volatile section: current state + plan progress (Task
-      // Decomposition Progress) + critic feedback + budget steering.
-      const tailParts: string[] = [renderStateTail(input.observation)];
-      if (s.plan.length > 0) {
-        tailParts.push(`Plan progress:\n${renderPlan(s.plan)}`);
-      }
-      if (verdict && !verdict.ok) {
-        tailParts.push(`[critic] ${verdict.feedback ?? "The last step did not achieve its intent."} Address this before proceeding.`);
-      }
-      if (s.consecutiveFailures >= failureBudget) {
-        tailParts.push(
-          `You have had ${s.consecutiveFailures} consecutive unproductive steps. If the goal cannot be accomplished, call complete with status "failure" and explain why instead of retrying further.`,
-        );
-      }
-      const tail = tailParts.join("\n\n");
+      const { session, tools, model: client } = input;
+      // The loop composed and recorded this already; calling it again is the
+      // standalone path, and composeTurn is idempotent so the critic is not
+      // re-run.
+      const pending = await composeTurn(input);
+      const tail = pending.tail ?? "";
 
       // Record what this request actually carried — trace stays complete.
+      const openTurn = session.turns[session.turns.length - 1];
       if (openTurn) {
-        if (verdict) openTurn.critic = verdict;
+        if (pending.critic) openTurn.critic = pending.critic;
         openTurn.tail = tail;
       }
 

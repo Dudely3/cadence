@@ -1,3 +1,11 @@
+---
+sessions: sess_mtks1qz8_1
+run.label: run the demo live
+run.step: true
+run.headed: true
+run.note: Haiku on the local shop page, stepped — about a cent
+---
+
 # You can construct the context yourself
 
 Nothing forces you to use the provider's message helpers. The wire format is

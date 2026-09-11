@@ -5,7 +5,10 @@
     "id": "example-rag-chatbot",
     "mode": "chatbot",
     "startedMs": 1786909800000,
-    "presentation": { "hideGoal": true },
+    "presentation": {
+      "hideGoal": true,
+      "resultsAreNextInput": true
+    },
     "goal": {
       "id": "rag-support-chat",
       "description": "Nimbus support chat — no goal object, no observation; the user drives one message at a time"
@@ -42,7 +45,10 @@
           "outputTokens": 42,
           "cacheReadTokens": 0
         },
-        "timing": { "startedMs": 1786909800000, "durationMs": 900 }
+        "timing": {
+          "startedMs": 1786909800000,
+          "durationMs": 900
+        }
       },
       {
         "index": 1,
@@ -73,7 +79,10 @@
           "outputTokens": 205,
           "cacheReadTokens": 0
         },
-        "timing": { "startedMs": 1786909860000, "durationMs": 2100 }
+        "timing": {
+          "startedMs": 1786909860000,
+          "durationMs": 2100
+        }
       },
       {
         "index": 2,
@@ -104,7 +113,10 @@
           "outputTokens": 187,
           "cacheReadTokens": 0
         },
-        "timing": { "startedMs": 1786909950000, "durationMs": 2300 }
+        "timing": {
+          "startedMs": 1786909950000,
+          "durationMs": 2300
+        }
       },
       {
         "index": 3,
@@ -124,7 +136,10 @@
           "outputTokens": 226,
           "cacheReadTokens": 0
         },
-        "timing": { "startedMs": 1786910020000, "durationMs": 2600 }
+        "timing": {
+          "startedMs": 1786910020000,
+          "durationMs": 2600
+        }
       }
     ]
   },

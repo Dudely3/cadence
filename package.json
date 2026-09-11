@@ -24,7 +24,14 @@
     "traces": "tsx examples/traces.ts",
     "pin": "tsx examples/pin.ts",
     "try": "tsx examples/try.ts",
-    "cachelab": "tsx examples/cache-lab.ts"
+    "cachelab": "tsx examples/cache-lab.ts",
+    "formatlab": "tsx examples/format-lab.ts",
+    "ladder": "tsx examples/ladder.ts",
+    "ladder:web": "tsx examples/ladder.ts --scenario pdc",
+    "slides": "tsx examples/slides-check.ts",
+    "ladder:rung": "tsx examples/ladder.ts --step --headed --rung",
+    "floor": "tsx examples/floor-check.ts",
+    "rerun": "tsx examples/rerun.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

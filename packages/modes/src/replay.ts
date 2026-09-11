@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { composeSystem } from "@cadence/core";
+import { applySubstitutions, composeSystem, substitutions } from "@cadence/core";
 import type {
   Action,
   ActionResult,
@@ -58,7 +58,23 @@ export interface ReplayModeOptions {
    *   "stub"           — keep them, replaying each recorded result
    */
   unknownTools?: "skip" | "stub";
+  /**
+   * Re-point the recording at different values: param name → new value,
+   * matched against the recording's own `session.params`.
+   *
+   * Every recorded value is swapped for its replacement in the arguments the
+   * replay passes and in the DOM selectors it re-resolves — so a run recorded
+   * for one item re-executes for another, with no model call. The completion
+   * summary is deliberately left alone; see rebind.ts.
+   */
+  params?: Record<string, string>;
 }
+
+/**
+ * Stands in for an argument whose re-pointed selector matched nothing. Chosen
+ * so a real tool rejects it: element ids are non-negative.
+ */
+const UNRESOLVED = -1;
 
 function zeroUsage(): Usage {
   return { model: "replay", inputTokens: 0, outputTokens: 0 };
@@ -77,9 +93,22 @@ function readPath(root: unknown, path: string): unknown {
 async function reResolveArgs(
   action: Action,
   input: DecideInput,
+  swaps: Array<[string, string]>,
 ): Promise<Record<string, unknown>> {
-  if (!action.argSources) return action.args;
   const out: Record<string, unknown> = { ...action.args };
+
+  // Re-point string arguments first, so an untagged literal ("Titanium Tent
+  // Stakes" as a search term) follows the new value too. The completion tool
+  // is exempt: its summary is narration from a model that is not running now.
+  if (swaps.length > 0 && action.tool !== "complete") {
+    for (const [key, value] of Object.entries(out)) {
+      if (typeof value !== "string") continue;
+      const next = applySubstitutions(value, swaps);
+      if (next !== value) out[key] = next;
+    }
+  }
+
+  if (!action.argSources) return out;
 
   for (const [key, source] of Object.entries(action.argSources)) {
     switch (source.kind) {
@@ -97,8 +126,28 @@ async function reResolveArgs(
         break;
       }
       default: {
-        const value = await input.env.resolveArg?.(source);
-        if (value !== undefined) out[key] = value;
+        // The environment re-reads its own world. Re-point the selector on the
+        // way in — a captured DOM signature usually CONTAINS the value ("button
+        // |Add Titanium Tent Stakes to cart"), which is what makes a recording
+        // re-runnable for a different subject rather than only for this one.
+        const selector =
+          swaps.length > 0 && "selector" in source && typeof source.selector === "string"
+            ? applySubstitutions(source.selector, swaps)
+            : undefined;
+        const asked = selector !== undefined ? { ...source, selector } : source;
+        const value = await input.env.resolveArg?.(asked);
+        if (value !== undefined) {
+          out[key] = value;
+        } else if (selector !== undefined) {
+          // A re-pointed selector that resolves to nothing must NOT fall back
+          // to the recorded value. The recorded value is a positional handle
+          // from another run: keeping it means clicking whatever happens to sit
+          // there now, succeeding, and doing the wrong thing — the failure mode
+          // that costs the most because it looks like success. An unmatchable
+          // value fails the tool call instead, loudly, in the trace.
+          console.log(`  (replay: "${selector}" matched nothing — failing this call rather than reusing the recorded target)`);
+          out[key] = UNRESOLVED;
+        }
       }
     }
   }
@@ -148,6 +197,11 @@ function registerRecordedOnlyTools(source: Session, tools: ToolRegistry): void {
 
 export function replayMode(source: Session, opts: ReplayModeOptions = {}): ExecutionMode {
   const policy = opts.unknownTools ?? "skip";
+  // Recorded value → replacement, computed once. Empty when this replay is a
+  // straight re-run, which is the common case and costs nothing.
+  const swaps = opts.params
+    ? substitutions({ to: opts.params, from: source.params ?? {} })
+    : [];
   // Our own cursor into the recording: with skipping, replayed turn N is not
   // necessarily recorded turn N, so the session length can't be the index.
   let cursor = 0;
@@ -202,7 +256,7 @@ export function replayMode(source: Session, opts: ReplayModeOptions = {}): Execu
           skippedIds.add(action.id); // mode-owned tool, policy "skip"
           continue;
         }
-        const args = await reResolveArgs(action, input);
+        const args = await reResolveArgs(action, input, swaps);
         resolvedById.set(action.id, args);
         toolUses.push({ id: action.id, name: action.tool, input: args });
       }
