@@ -31,5 +31,7 @@ Same loop, same tools, same environment. Only the **policy** changed.
 | critic (one per closed turn) | 2 |
 | **total** | **6** |
 
-Three turns of work, six model calls. That is *why* accuracy mode costs
-~16× speed mode on the same task — and the token strip shows it turn by turn.
+Three turns of work, six model calls. Against the speed run of the same task,
+also bound to this slide, that is **14× the cost** — $0.0943 against $0.0068.
+The requests column shows where it goes, call by call, and the last slide in
+the deck puts all three modes side by side.

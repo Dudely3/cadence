@@ -22,6 +22,8 @@
   #cart { background: #fff; border: 1px solid #e0ded8; border-radius: 8px; padding: 14px; margin-top: 28px; }
   #cart ul { margin: 6px 0; padding-left: 20px; font-size: 13px; }
   #cart .total { font-weight: 700; }
+  #cart-lines { font-size: 13px; color: #444; margin: 2px 0 6px; }
+  #cart-lines div { display: flex; justify-content: space-between; max-width: 260px; }
 </style>
 </head>
 <body>
@@ -35,6 +37,7 @@
   <section id="cart" aria-label="Shopping cart">
     <h2>Your cart</h2>
     <ul id="cart-items"><li id="cart-empty">Cart is empty.</li></ul>
+    <div id="cart-lines"></div>
     <div class="row">
       <span class="total" id="cart-total">Total: $0.00</span>
       <button id="clear-cart" aria-label="Clear cart">Clear cart</button>
@@ -104,8 +107,28 @@
         ul.appendChild(li);
       }
     }
-    const total = cart.reduce((a, p) => a + p.price, 0);
-    document.getElementById("cart-total").textContent = "Total: " + fmt(total);
+    // Bundle deal: $5 off once the cart holds ten or more items. Deliberately
+    // NOT advertised on the product cards — the only way to know the total is
+    // to read the cart after adding, which is the whole point of the task in
+    // examples/compare.ts. Kept in whole cents so the displayed subtotal,
+    // discount and total can never disagree with each other by a rounding hair.
+    //
+    // TEN, not two: a two-item threshold would have fired on ordinary goals —
+    // "add the two cheapest Camping items" is a thing you'd type live, and
+    // this page is what slide 4's run panel drives. Nothing else in the repo
+    // puts ten items in this cart, so every other demo is untouched.
+    const subtotalCents = cart.reduce((a, p) => a + Math.round(p.price * 100), 0);
+    const discountCents = cart.length >= 10 ? 500 : 0;
+    const totalCents = subtotalCents - discountCents;
+    const lines = document.getElementById("cart-lines");
+    // One item behaves EXACTLY as it always did: no extra lines, same total
+    // text. Every other demo in this repo adds exactly one item.
+    lines.innerHTML =
+      discountCents === 0
+        ? ""
+        : '<div><span>Subtotal</span><span>' + fmt(subtotalCents / 100) + '</span></div>' +
+          '<div><span>Bundle discount (10+ items)</span><span>-' + fmt(discountCents / 100) + '</span></div>';
+    document.getElementById("cart-total").textContent = "Total: " + fmt(totalCents / 100);
     document.getElementById("cart-count").textContent =
       "Cart (" + cart.length + " item" + (cart.length === 1 ? "" : "s") + ")";
   }

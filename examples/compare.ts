@@ -1,24 +1,61 @@
 /**
- * The money table: the SAME goal run under speed, accuracy, and replay, with
- * real wall-clock / calls / tokens / cost / outcome side by side.
+ * The money table: the SAME goals run under speed, accuracy, and replay, with
+ * real wall-clock / calls / cost / outcome side by side.
  *
- * Order matters: speed runs first and its trace becomes replay's program —
- * proving the thesis end to end (the trace IS the context IS the replay).
+ *   npm run compare                        both goals, one run each
+ *   npx tsx examples/compare.ts --goals a  just the bill
+ *   npx tsx examples/compare.ts --goals b --modes speed --runs 3
  *
- * Requires ANTHROPIC_API_KEY (speed + accuracy are live; replay is free).
+ * Two goals, because a cost ratio on its own is a bad argument.
  *
- *   npm run compare
+ *   A. THE BILL — "add the cheapest Camping item". Both modes get this right
+ *      every time, so the only thing the columns differ by is price. That is
+ *      the honest headline: on an easy step, accuracy's plan and critic are
+ *      pure overhead.
+ *
+ *   B. THE TRAP THAT CAUGHT NOBODY — "add every Camping and Climbing item,
+ *      then report the cart's total". Ten items trips a $5 bundle discount that
+ *      is NOT printed on the product cards, so summing the prices you already
+ *      saw gives $690.08 while the cart charges $685.08.
+ *
+ *      MEASURED (2026-09-10, 3 runs each): speed 3/3 and accuracy 3/3 both
+ *      reported $685.08. The trap fires on nobody, and the reason is the point
+ *      of the whole talk — the cart total is re-observed into EVERY request, so
+ *      there is no stale number to be fooled by. You cannot catch a
+ *      well-constructed context out with one. Kept because a negative result
+ *      that survives three runs per mode is worth more on a slide than the
+ *      gotcha it was built to be.
+ *
+ *      What it did find, by accident, is in the cost column: accuracy ran the
+ *      identical goal for $0.1528 (3 turns), $0.3787 (12) and $0.3868 (12) — a
+ *      2.5x spread, because a per-turn critic multiplies whatever turn count
+ *      the model happens to take, and batching ten clicks into one turn or
+ *      doing them one at a time is the model's choice, not ours.
+ *
+ * Goal B is run `--runs` times per mode, because "did it verify?" is a HIT
+ * RATE, not a single result. One run proves nothing about a coin. The DEFAULT
+ * is 1 run, though: at 3 runs a full `npm run compare` is about a dollar, which
+ * is not a button you want to lean on by accident. The recorded hit rates came
+ * from `--runs 3`.
+ *
+ * Every claim here is checked against the world — the cart's rendered total —
+ * never against the model's summary prose. The summary is only inspected to
+ * see WHICH number it chose to report, which is the whole experiment.
+ *
+ * Runs against examples/site/shop.html over file://, so it is deterministic
+ * and needs no network. Costs real money: speed is Haiku, accuracy is Opus
+ * with a planner and a per-turn critic.
  */
 // Loads .env (shell values win). Must come before anything reads the key.
 import "./env";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import {
   run,
   ToolRegistry,
   completionTool,
   resilient,
-  InMemoryTracer,
   costOfSession,
-  type Environment,
   type ExecutionMode,
   type Goal,
   type RunResult,
@@ -27,86 +64,281 @@ import {
 import { FileTracer } from "@cadence/tracer-file";
 import { AnthropicModelClient } from "@cadence/model-anthropic";
 import { speedMode, accuracyMode, replayMode } from "@cadence/modes";
-import { NotepadEnv } from "@cadence/env-notepad";
+import { BrowserEnv } from "@cadence/env-browser";
+import { demoFlags } from "./flags";
 
-const GOAL: Goal = {
-  id: "compare-haiku",
+const START_URL = pathToFileURL(path.resolve("examples/site/shop.html")).href;
+
+/** What the page actually charges for all ten items, and the trap beside it. */
+const TRUE_TOTAL = "685.08";
+const SUBTOTAL_TRAP = "690.08";
+/** The one right answer for goal A. */
+const CHEAPEST_CAMPING = "Titanium Tent Stakes";
+
+const GOAL_A: Goal = {
+  id: "compare-cheapest",
   description:
-    "Write a three-line haiku about the ocean to the notepad — one line per append_line call (5-7-5 syllables). Then call complete.",
-  successCriteria: "The notepad contains exactly three lines forming a plausible 5-7-5 haiku.",
+    "You are on the Trailhead Supply store page. Add the cheapest item in the " +
+    'Camping category to the cart (exactly one item), then call complete with status "success". ' +
+    "Read prices from the page; do not guess.",
+  successCriteria: "The cart contains exactly one item: the cheapest Camping product.",
 };
 
-interface Row {
+const GOAL_B: Goal = {
+  id: "compare-cart-total",
+  description:
+    "You are on the Trailhead Supply store page. Add every item in the Camping category " +
+    "and every item in the Climbing category to the cart — ten items in total. Then call " +
+    "complete, reporting the cart's total exactly as the cart shows it. Read the total from " +
+    "the cart itself; do not add up the prices yourself.",
+  successCriteria:
+    "The cart holds all ten Camping and Climbing items, and the reported total is the " +
+    "total the cart displays.",
+};
+
+// --- flags -----------------------------------------------------------------
+const argv = process.argv.slice(2);
+const flags = demoFlags(argv, process.env, ["runs", "modes", "goals"]);
+const valueOf = (name: string): string | undefined => {
+  const i = argv.indexOf(`--${name}`);
+  return i >= 0 ? argv[i + 1] : undefined;
+};
+const RUNS = Math.max(1, Math.min(10, Number(valueOf("runs") ?? 1) || 1));
+const MODES = (valueOf("modes") ?? "speed,accuracy").split(",").map((s) => s.trim());
+const GOALS = (valueOf("goals") ?? "a,b").split(",").map((s) => s.trim().toLowerCase());
+
+function newEnv(): BrowserEnv {
+  return new BrowserEnv({
+    startUrl: START_URL,
+    headless: !flags.headed,
+    ...(flags.viewport ? { viewport: flags.viewport } : {}),
+    representation: "cleaned",
+    pageTextLimit: 4_000,
+    maxElements: 60,
+  });
+}
+
+/** A mode fresh each time: accuracy keeps plan state on the instance. */
+function modeFor(name: string, maxSteps: number): ExecutionMode {
+  return name === "accuracy" ? accuracyMode({ maxSteps }) : speedMode({ maxSteps });
+}
+
+interface Outcome {
+  goal: string;
   mode: string;
   result: RunResult;
-  lines: number;
   cost: number;
+  /** What the world looked like afterwards. */
+  cartItems: number;
+  cartTotal: string;
+  /** The number the model chose to report, if we can find one. */
+  reported: "read" | "inferred" | "other" | "none";
+  correct: boolean;
+  session: Session;
 }
 
-async function runMode(name: string, mode: ExecutionMode): Promise<{ row: Row; session: Session }> {
-  const env = new NotepadEnv();
-  // Live runs write traces (viz + replay artifacts); replay itself stays in memory.
-  const tracer = name === "replay" ? new InMemoryTracer() : new FileTracer();
-
-  console.log(`\n━━ ${name} ━━`);
-  const result = await run({
-    goal: GOAL,
-    env,
-    tools: new ToolRegistry([...env.availableTools(), completionTool(GOAL)]),
-    model: resilient(new AnthropicModelClient()),
-    mode,
-    tracer,
-    onEvent: (e) => {
-      if (e.type === "action") console.log(`  → ${e.tool}`);
-      if (e.type === "done") console.log(`  ${e.success ? "✓" : "✗"} ${e.outcome}`);
-    },
-  });
-
-  const observed = await env.observe();
-  const lines = (observed.raw as { lines: string[] }).lines.length;
-  const session = tracer.session;
-  if (!session) throw new Error("tracer has no session");
-  return { row: { mode: name, result, lines, cost: costOfSession(session) }, session };
+/** Pull "Total: $685.08" out of the page the model was looking at. */
+function readCart(summary: string): { items: number; total: string } {
+  const total = /Total:\s*\$([\d,]+\.\d\d)/.exec(summary)?.[1] ?? "?";
+  const items = Number(/Cart \((\d+) items?\)/.exec(summary)?.[1] ?? "0");
+  return { items, total };
 }
 
-function fmt(n: number): string {
-  return n >= 10_000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+function completionSummary(session: Session): string {
+  const args = session.turns
+    .flatMap((t) => t.actions)
+    .find((a) => a.tool === "complete")?.args as { summary?: string } | undefined;
+  return args?.summary ?? "";
 }
 
-async function main(): Promise<void> {
-  if (!process.env["ANTHROPIC_API_KEY"]) {
-    console.error("Set ANTHROPIC_API_KEY before running the comparison.");
-    process.exit(1);
+async function once(goal: Goal, modeName: string, maxSteps: number): Promise<Outcome> {
+  const env = newEnv();
+  const tracer = new FileTracer();
+  try {
+    const result = await run({
+      goal,
+      env,
+      tools: new ToolRegistry([...env.availableTools(), completionTool(goal)]),
+      model: resilient(new AnthropicModelClient()),
+      mode: modeFor(modeName, maxSteps),
+      tracer,
+      onEvent: (e) => {
+        if (e.type === "action") process.stdout.write(".");
+      },
+    });
+    const world = await env.observe();
+    const cart = readCart(world.summary);
+    const said = completionSummary(tracer.session!);
+
+    let reported: Outcome["reported"] = "none";
+    if (said.includes(TRUE_TOTAL)) reported = "read";
+    else if (said.includes(SUBTOTAL_TRAP)) reported = "inferred";
+    else if (/\$[\d,]+\.\d\d/.test(said)) reported = "other";
+
+    const correct =
+      goal.id === GOAL_A.id
+        ? cart.items === 1 && world.summary.includes(CHEAPEST_CAMPING)
+        : cart.items === 10 && reported === "read";
+
+    return {
+      goal: goal.id,
+      mode: modeName,
+      result,
+      cost: costOfSession(tracer.session!),
+      cartItems: cart.items,
+      cartTotal: cart.total,
+      reported,
+      correct,
+      session: tracer.session!,
+    };
+  } finally {
+    await env.dispose();
   }
+}
 
-  const rows: Row[] = [];
+/** Replay the recorded speed run of goal A — no model, no tokens, no cost. */
+async function replayOf(source: Session): Promise<Outcome> {
+  const env = newEnv();
+  // liveOnly: the durable recording already exists; replaying it on stage
+  // shouldn't mint a near-duplicate trace every time.
+  const tracer = new FileTracer({ liveOnly: true });
+  try {
+    const result = await run({
+      goal: GOAL_A,
+      env,
+      tools: new ToolRegistry([...env.availableTools(), completionTool(GOAL_A)]),
+      model: resilient(new AnthropicModelClient()),
+      mode: replayMode(source),
+      tracer,
+    });
+    const world = await env.observe();
+    const cart = readCart(world.summary);
+    return {
+      goal: GOAL_A.id,
+      mode: "replay",
+      result,
+      cost: costOfSession(tracer.session!),
+      cartItems: cart.items,
+      cartTotal: cart.total,
+      reported: "none",
+      correct: cart.items === 1 && world.summary.includes(CHEAPEST_CAMPING),
+      session: tracer.session!,
+    };
+  } finally {
+    await env.dispose();
+  }
+}
 
-  // 1. Speed — live Haiku, trace recorded to disk.
-  const speed = await runMode("speed", speedMode());
-  rows.push(speed.row);
+// --- run it ----------------------------------------------------------------
+if (!process.env["ANTHROPIC_API_KEY"]) {
+  console.error("Set ANTHROPIC_API_KEY before running the comparison (speed + accuracy are live).");
+  process.exit(1);
+}
 
-  // 2. Accuracy — live Opus: planner + per-step critic + failure budget.
-  const accuracy = await runMode("accuracy", accuracyMode());
-  rows.push(accuracy.row);
+const pad = (s: string, n: number): string => s.padEnd(n);
+const money = (n: number): string => `$${n.toFixed(4)}`;
+const secs = (ms: number): string => `${(ms / 1000).toFixed(1)}s`;
 
-  // 3. Replay — walks the speed run's trace. No model, no tokens, no cost.
-  const replay = await runMode("replay", replayMode(speed.session));
-  rows.push(replay.row);
-
-  console.log("\n\n## Same goal, three execution modes\n");
-  console.log("| Mode | Wall | LLM calls | In tok | Out tok | Cache read | Cost | Outcome | Goal met |");
-  console.log("|---|---|---|---|---|---|---|---|---|");
-  for (const r of rows) {
-    const t = r.result.totals;
-    const outcome = `${r.result.outcome}${r.result.completionStatus ? ` (${r.result.completionStatus})` : ""}`;
+const billRows: Outcome[] = [];
+if (GOALS.includes("a")) {
+  console.log("\n════════ A. the bill — same goal, one right answer ════════");
+  for (const mode of MODES) {
+    process.stdout.write(`  ${pad(mode, 9)}`);
+    const out = await once(GOAL_A, mode, 8);
+    billRows.push(out);
     console.log(
-      `| ${r.mode} | ${(t.wallMs / 1000).toFixed(1)}s | ${t.llmCalls} | ${fmt(t.inputTokens)} | ${fmt(t.outputTokens)} | ${fmt(t.cacheReadTokens)} | $${r.cost.toFixed(4)} | ${outcome} | ${r.lines >= 3 ? "✓" : "✗"} (${r.lines} lines) |`,
+      ` ${out.result.outcome} · ${out.result.steps} turns · ${out.result.totals.llmCalls} calls · ` +
+        `${money(out.cost)} · cart ${out.correct ? "correct" : "WRONG"}`,
     );
   }
-  console.log("\ntrace for replay came from the speed run — one structure, three payoffs.");
+  // Replay walks whichever speed run we just recorded.
+  const speedRun = billRows.find((r) => r.mode === "speed");
+  if (speedRun) {
+    process.stdout.write(`  ${pad("replay", 9)}`);
+    const out = await replayOf(speedRun.session);
+    billRows.push(out);
+    console.log(
+      ` ${out.result.outcome} · ${out.result.steps} turns · ${out.result.totals.llmCalls} calls · ` +
+        `${money(out.cost)} · cart ${out.correct ? "correct" : "WRONG"}`,
+    );
+  }
 }
 
-main().catch((err: unknown) => {
-  console.error(err);
-  process.exit(1);
-});
+const verifyRows: Outcome[] = [];
+if (GOALS.includes("b")) {
+  console.log(
+    `\n════════ B. the reason — did it read the total, or add it up? (${RUNS} runs each) ════════`,
+  );
+  console.log(`  the cart charges $${TRUE_TOTAL}; the prices on the cards sum to $${SUBTOTAL_TRAP}\n`);
+  for (const mode of MODES) {
+    for (let i = 0; i < RUNS; i++) {
+      process.stdout.write(`  ${pad(`${mode} #${i + 1}`, 13)}`);
+      const out = await once(GOAL_B, mode, 12);
+      verifyRows.push(out);
+      const verdict =
+        out.reported === "read"
+          ? `read the cart ($${TRUE_TOTAL})`
+          : out.reported === "inferred"
+            ? `ADDED IT UP ($${SUBTOTAL_TRAP})`
+            : out.reported === "other"
+              ? "some other number"
+              : "no number at all";
+      console.log(
+        ` ${out.result.outcome} · ${out.result.steps} turns · ${out.result.totals.llmCalls} calls · ` +
+          `${money(out.cost)} · ${out.cartItems}/10 in cart · ${verdict}`,
+      );
+    }
+  }
+}
+
+// --- the tables ------------------------------------------------------------
+if (billRows.length > 0) {
+  console.log("\n\n## A. Same goal, three execution modes\n");
+  console.log("| Mode | Turns | Calls | Wall | Cost | Cart |");
+  console.log("|---|---|---|---|---|---|");
+  for (const r of billRows) {
+    console.log(
+      `| ${r.mode} | ${r.result.steps} | ${r.result.totals.llmCalls} | ${secs(r.result.totals.wallMs)} | ` +
+        `${money(r.cost)} | ${r.correct ? "✓" : "✗"} |`,
+    );
+  }
+  const speed = billRows.find((r) => r.mode === "speed");
+  const acc = billRows.find((r) => r.mode === "accuracy");
+  if (speed && acc && speed.cost > 0) {
+    console.log(
+      `\n${(acc.cost / speed.cost).toFixed(1)}× the cost and ` +
+        `${(acc.result.totals.wallMs / speed.result.totals.wallMs).toFixed(1)}× the wall clock ` +
+        `for the same one item in the cart.`,
+    );
+  }
+}
+
+if (verifyRows.length > 0) {
+  console.log("\n\n## B. Did it report a number it read, or one it worked out?\n");
+  console.log("| Mode | Runs | Read the cart | Added it up | Other | Cost each |");
+  console.log("|---|---|---|---|---|---|");
+  for (const mode of MODES) {
+    const rows = verifyRows.filter((r) => r.mode === mode);
+    if (rows.length === 0) continue;
+    const n = (k: Outcome["reported"]): number => rows.filter((r) => r.reported === k).length;
+    const avg = rows.reduce((a, r) => a + r.cost, 0) / rows.length;
+    console.log(
+      `| ${mode} | ${rows.length} | **${n("read")}** | ${n("inferred")} | ` +
+        `${n("other") + n("none")} | ${money(avg)} |`,
+    );
+  }
+  const wrongCarts = verifyRows.filter((r) => r.cartItems !== 10);
+  if (wrongCarts.length > 0) {
+    console.log(
+      `\n${wrongCarts.length} run(s) didn't even get ten items in the cart: ` +
+        wrongCarts.map((r) => `${r.mode} (${r.cartItems})`).join(", "),
+    );
+  }
+  console.log(
+    "\nJudge these by the cart, not by the sentence. The trap is not arithmetic —" +
+      "\nboth numbers are correct sums of something. It is whether the model went back" +
+      "\nand looked after it acted.",
+  );
+}
+
+console.log("\ntraces written to traces/ — bind the interesting ones to the slide.");

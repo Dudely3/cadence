@@ -40,6 +40,7 @@ const DEFAULT_SCRIPT = "examples/browse.ts";
  */
 const SCRIPTS = new Set([
   "examples/browse.ts",
+  "examples/compare.ts",
   "examples/ladder.ts",
   "examples/rerun.ts",
   "examples/spike.ts",
