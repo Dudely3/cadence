@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { approxTokens, fmtTokens, REGION_LABEL, type AnatomyBlock, type RequestAnatomy } from "./anatomy";
+import { fmtTokens, REGION_LABEL, type AnatomyBlock, type RequestAnatomy } from "./anatomy";
 
 /**
  * Presentation view: the request as colored blocks — one quiet label per
@@ -25,8 +25,8 @@ export function BlockMap(props: { anatomy: RequestAnatomy }): React.JSX.Element 
   }, []);
 
   const response = props.anatomy.response;
-  const weights = blocks.map((b) => Math.sqrt(approxTokens(b.chars)));
-  const rWeights = response.map((b) => Math.sqrt(approxTokens(b.chars)));
+  const weights = blocks.map((b) => Math.sqrt(b.tokens));
+  const rWeights = response.map((b) => Math.sqrt(b.tokens));
   const open: AnatomyBlock | undefined =
     blocks.find((b) => b.id === openId) ?? response.find((b) => b.id === openId);
 
@@ -34,14 +34,18 @@ export function BlockMap(props: { anatomy: RequestAnatomy }): React.JSX.Element 
     <button
       className={`blockmap-block blockmap-${b.region}${b.id === openId ? " blockmap-open" : ""}`}
       onClick={() => setOpenId(b.id === openId ? null : b.id)}
-      title={`${REGION_LABEL[b.region]} — ~${fmtTokens(approxTokens(b.chars))} tok`}
+      title={
+        b.region === "result"
+          ? `${REGION_LABEL[b.region]} — ~${fmtTokens(b.tokens)} tok, charged on the next request`
+          : `${REGION_LABEL[b.region]} — ${b.exact ? "" : "~"}${fmtTokens(b.tokens)} tok`
+      }
     >
       <span className="blockmap-label">
         {b.label}
         {b.isError && " ✕"}
         {b.breakpoint && " ❄"}
       </span>
-      <span className="blockmap-tok">~{fmtTokens(approxTokens(b.chars))}</span>
+      <span className="blockmap-tok">{b.exact ? "" : "~"}{fmtTokens(b.tokens)}</span>
     </button>
   );
 
@@ -73,7 +77,7 @@ export function BlockMap(props: { anatomy: RequestAnatomy }): React.JSX.Element 
           <div className="blockmap-reader-head">
             <span className={`reader-dot blockmap-${open.region}`} />
             <strong>{open.label}</strong>
-            <span className="hint">{REGION_LABEL[open.region]} · ~{fmtTokens(approxTokens(open.chars))} tok · esc to close</span>
+            <span className="hint">{REGION_LABEL[open.region]} · {open.exact ? "" : "~"}{fmtTokens(open.tokens)} tok · esc to close</span>
           </div>
           <pre className="blockmap-reader-body">
             {open.body.length > 6000 ? `${open.body.slice(0, 6000)}\n\n… (${open.chars - 6000} more chars — see anatomy view)` : open.body}

@@ -309,6 +309,17 @@ pre,
   border-left-color: var(--series-4);
   background: color-mix(in srgb, var(--series-4) 8%, var(--surface-1));
 }
+.block-result {
+  /* Dashed, and none of the response colour: this block is in the pane because
+     it happened here, not because it was billed here. */
+  border-left-style: dashed;
+  border-left-color: var(--text-muted);
+  background: none;
+}
+.block-result .block-tokens {
+  color: var(--text-muted);
+  font-style: italic;
+}
 .response-title {
   margin-top: 14px;
   border-top: 1px solid var(--border);
@@ -502,6 +513,9 @@ pre,
 }
 .blockmap-response {
   background: color-mix(in srgb, var(--series-4) 55%, var(--surface-1));
+}
+.blockmap-result {
+  background: color-mix(in srgb, var(--text-muted) 28%, var(--surface-1));
 }
 .blockmap-divider {
   font-size: 11px;

@@ -75,6 +75,13 @@ breaking it loudly, so most have a check attached.
     selector fails the call. Reusing the id turns a loud failure into a
     confident wrong answer.
 
+11. **The anatomy pane shows the request, not a model of it.** Block token
+    counts are scaled to the usage the API recorded for that request, cache
+    regions are corrected against it, and anything billed but not sent by this
+    client — the API's tool preamble, extended thinking — is drawn as its own
+    block rather than smeared over the others. `npm run tokens` asserts every
+    region sums to the invoice.
+
 ---
 
 ## Before you finish
@@ -83,7 +90,7 @@ breaking it loudly, so most have a check attached.
 npm run check
 ```
 
-Typecheck plus four scripted checks. Free, no API key, no network, seconds.
+Typecheck plus five scripted checks. Free, no API key, no network, seconds.
 
 | Command | Covers |
 |---|---|
@@ -92,6 +99,7 @@ Typecheck plus four scripted checks. Free, no API key, no network, seconds.
 | `npm run replay` | Replay fidelity, including mode-owned tools and re-pointing. |
 | `npm run drill` | Nine injected faults. Must report **9/9**. |
 | `npm run slides` | Every slide's bound recordings and launchable runs still resolve. |
+| `npm run tokens` | The viewer's token chart sums to the usage the API recorded. |
 
 **Do not run these without asking — they make real API calls:** `spike`,
 `recover`, `compare`, `browse`, `jam`, `demo`, `demo:accuracy`, `try`,

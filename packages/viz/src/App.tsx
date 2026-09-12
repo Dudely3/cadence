@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTrace, useTraceList, useTraceSummaries, type TraceFileInfo } from "./trace";
-import { requestAnatomy, approxTokens, fmtTokens, REGION_LABEL, type AnatomyBlock } from "./anatomy";
+import { requestAnatomy, fmtTokens, REGION_LABEL, type AnatomyBlock } from "./anatomy";
 import { TurnList } from "./TurnList";
 import { BlockMap } from "./BlockMap";
 import { Sessions } from "./Sessions";
@@ -61,7 +61,11 @@ function BlockCard(props: {
         {block.label}
         {block.isError && <span className="chip chip-critical chip-mini">✕ error</span>}
       </span>
-      <span className="block-tokens">~{fmtTokens(approxTokens(block.chars))} tok</span>
+      <span className="block-tokens">
+        {block.region === "result"
+          ? `→ ~${fmtTokens(block.tokens)} tok next request`
+          : `${block.exact ? "" : "~"}${fmtTokens(block.tokens)} tok`}
+      </span>
       {block.breakpoint && <span className="block-bp" title="cache_control breakpoint on the wire">❄</span>}
     </button>
   );
@@ -543,10 +547,22 @@ export function App(): React.JSX.Element {
               )}
             </div>
           ))}
-          <div className="pane-title response-title">response — what came back</div>
-          {anatomy?.response.map((b) => (
-            <BlockCard key={b.id} block={b} selected={b.id === blockId} onSelect={() => setBlockId(b.id)} />
-          ))}
+          <div className="pane-title response-title">response — what the model generated</div>
+          {anatomy?.response
+            .filter((b) => b.region === "response")
+            .map((b) => (
+              <BlockCard key={b.id} block={b} selected={b.id === blockId} onSelect={() => setBlockId(b.id)} />
+            ))}
+          {anatomy && anatomy.response.some((b) => b.region === "result") && (
+            <div className="pane-title response-title">
+              then the environment answered — not output, not billed here
+            </div>
+          )}
+          {anatomy?.response
+            .filter((b) => b.region === "result")
+            .map((b) => (
+              <BlockCard key={b.id} block={b} selected={b.id === blockId} onSelect={() => setBlockId(b.id)} />
+            ))}
           {anatomy?.responsePending && <p className="hint">response pending…</p>}
           {anatomy && !anatomy.responsePending && anatomy.response.length === 0 && (
             <p className="hint">no turn recorded for this request yet</p>
@@ -569,7 +585,7 @@ export function App(): React.JSX.Element {
                 <span className="chip">{selectedBlock.role}</span>
                 <span className="chip">{REGION_LABEL[selectedBlock.region]}</span>
                 <span className="chip">
-                  {selectedBlock.chars} chars · ~{fmtTokens(approxTokens(selectedBlock.chars))} tok
+                  {selectedBlock.chars} chars · {selectedBlock.exact ? "" : "~"}{fmtTokens(selectedBlock.tokens)} tok
                 </span>
                 {selectedBlock.breakpoint && <span className="chip">❄ breakpoint</span>}
               </div>
