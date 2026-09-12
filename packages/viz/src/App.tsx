@@ -173,6 +173,25 @@ export function App(): React.JSX.Element {
     setBlockId(null);
   }, []);
 
+  // On a fresh clone there is no traces/live.json — it is the one trace that is
+  // deliberately NOT committed, because a leftover copy makes this page read
+  // "stalled". So the default of tailing it left a first-time reader staring at
+  // an empty pane with 65 recordings sitting one menu away, which is a poor
+  // answer to "clone it and follow along".
+  //
+  // Open something real instead, once, as soon as the listing arrives:
+  // traces/pinned.json if it is there — that file exists precisely to be the
+  // offline fallback — and otherwise the newest recording, since the server
+  // returns the list newest-first. A live run still wins whenever one exists.
+  const pickedOpening = useRef(false);
+  useEffect(() => {
+    if (pickedOpening.current || files.length === 0) return;
+    pickedOpening.current = true;
+    if (files.some((f) => f.name === "live.json")) return;
+    const opening = files.find((f) => f.name === "pinned.json") ?? files[0];
+    if (opening) openTrace(opening.name);
+  }, [files, openTrace]);
+
   // --- the slide the deck is on, and the recordings it is about ------------
   const slideDef = SLIDES[Math.min(slide, Math.max(0, SLIDES.length - 1))];
   const slideSessions = useMemo(() => {
@@ -290,8 +309,11 @@ export function App(): React.JSX.Element {
       <div className="viz-root empty-state">
         <h1>cadence · context anatomy</h1>
         <p>
-          No trace yet{stale ? " (waiting for traces/)" : ""}. Run <code>npm run spike</code> in a
-          terminal — this page tails <code>traces/live.json</code> and draws each request as it happens.
+          {files.length === 0
+            ? "No recordings found in traces/. "
+            : "Opening a recording… "}
+          Run <code>npm run spike</code> in a terminal to make one — this page tails{" "}
+          <code>traces/live.json</code> and draws each request as it happens.
         </p>
       </div>
     );

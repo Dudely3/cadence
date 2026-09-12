@@ -177,8 +177,10 @@ Drive everything from the visualizer. One command, one window to touch:
 npm run viz
 ```
 
-Open http://localhost:5173, press **r** (or click **▶ run**), write a goal, press
-**start**. The agent opens its own Chromium window; **step** advances one turn, **go**
+Open http://localhost:5173. On a clone with no run of its own yet it opens on
+`traces/pinned.json` — the committed stage fallback — so the deck and every
+bound recording work offline, with no API key. Press **r** (or click **▶ run**),
+write a goal, press **start** to do it live. The agent opens its own Chromium window; **step** advances one turn, **go**
 finishes unattended, **stop** kills it.
 
 The run panel sits **beside** the context anatomy, not instead of it: controls and the
