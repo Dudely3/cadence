@@ -89,6 +89,23 @@ export interface ContextShape {
    * the very last block of the request.
    */
   cacheAt?: "last-turn" | "end";
+  /**
+   * Also anchor a breakpoint on the GOAL message, so the frozen prefix reaches
+   * below the API's injected tool-use preamble.
+   *
+   * Declaring tools makes the API add a fixed ~317-token block of instructions
+   * after the system prompt, which a cache line on the system block cannot
+   * cover — measured on claude-haiku-4-5: 7 tokens billed fresh with no tools,
+   * exactly 324 with 1, 4 or 12. Without this flag turn 0 pays it at full price
+   * and turn 1 pays it again as cache write, once the history breakpoint
+   * finally reaches past it. With it: 302 base tokens saved per run.
+   *
+   * OPT-IN, and set by the loop on every new run, because buildMessages is also
+   * what the viewer replays recordings through. Defaulting it on would redraw
+   * every trace recorded before it existed with a cache line that was never
+   * sent — the one thing the anatomy pane must never do.
+   */
+  goalCache?: boolean;
 }
 
 /**

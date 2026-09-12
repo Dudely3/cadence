@@ -42,7 +42,9 @@ export function naiveMode(opts: NaiveModeOptions = {}): ExecutionMode {
     // buildMessages reads it and so does the context viewer, so what is drawn
     // is what was sent. Recorded in prepare(), before the trace freezes.
     prepare: ({ session }) => {
-      session.contextShape = { freezeState: true, cacheAt: "end" };
+      // Merge, don't replace: the loop stamps goalCache on every new session and
+      // a wholesale assignment would quietly drop it.
+      session.contextShape = { ...session.contextShape, freezeState: true, cacheAt: "end" };
       return Promise.resolve();
     },
 

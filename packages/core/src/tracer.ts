@@ -43,7 +43,16 @@ export class InMemoryTracer implements Tracer {
   session: Session | null = null;
 
   start(goal: Goal, mode: string): Session {
-    this.session = { id: id("sess"), goal, mode, turns: [], startedMs: Date.now() };
+    this.session = {
+      id: id("sess"),
+      goal,
+      mode,
+      turns: [],
+      startedMs: Date.now(),
+      // Stamped on the session, not defaulted in buildMessages, so a recording
+      // carries the shape it was actually sent with. See ContextShape.goalCache.
+      contextShape: { goalCache: true },
+    };
     return this.session;
   }
 

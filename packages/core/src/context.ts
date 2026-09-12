@@ -81,7 +81,33 @@ export function buildMessages(
   const messages: Message[] = [
     {
       role: "user",
-      content: [{ type: "text", text: `Goal: ${session.goal.description}` }],
+      content: [
+        {
+          type: "text",
+          text: `Goal: ${session.goal.description}`,
+          // A breakpoint HERE, and not only on the system block, because
+          // declaring tools makes the API inject a fixed ~317-token tool-use
+          // preamble that lands after the system prompt — outside the reach of
+          // a cache line on it. Measured on claude-haiku-4-5 with a system-only
+          // breakpoint: 7 tokens billed fresh with no tools declared, and
+          // exactly 324 with 1, 4 or 12 of them.
+          //
+          // Without this, turn 0 pays that preamble at full price and turn 1
+          // pays it again as cache write when the history breakpoint finally
+          // reaches below it. Measured over three turns with 14 tools: 354
+          // fresh on turn 0 and a 414-token write on turn 1, against 20 and 80
+          // with this line — 302 base tokens per run, for one flag.
+          //
+          // The goal is the right anchor because it is the last thing in the
+          // prompt that cannot change during a run. Everything after it is
+          // history, which grows, or the volatile tail, which is replaced.
+          //
+          // Opt-in (ContextShape.goalCache), set by the loop on every new run:
+          // this same function redraws old recordings in the viewer, and a
+          // default-on flag would show them a cache line they never sent.
+          ...(shape.goalCache ? { cache: true } : {}),
+        },
+      ],
     },
   ];
 
