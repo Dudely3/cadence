@@ -140,10 +140,13 @@ Live model runs vary by 10-20% between executions, so record one good run and pi
 rather than running it cold on stage.
 
 `ladder:web` is the sharper version. On a real page the naive rungs don't cost more —
-they return the **wrong answer**: rung 1 gives up ("unable to locate a session…") with the
-answer sitting past its 200,000-character cut, and rung 2 confidently reports a different
-session by a different speaker. Both report `completed`. Rungs 3 and 4 get it right for
-two cents and one. It needs the network, so keep the local `ladder` as the rehearsable one.
+they **stop working**. Rung 1 freezes a 76K-token page into history twice and its third
+request is refused outright: `prompt is too long: 232396 tokens > 200000 maximum`. Rung 2
+writes "let me search through the schedule content" and then calls no tool at all, on a
+page cut at 200,000 characters, and reports `stopped` without throwing anything. Rungs 3
+and 4 get it right in one turn and three, for two cents and one and a half. It needs the
+network and the site can change under it, so keep the local `ladder` as the rehearsable
+one — and expect to rewrite the prose here if you re-record it.
 
 One result on the local page is worth knowing before you read the table, and one trap
 with it. Rung 1's prompt is append-only, so almost none of it is billed fresh — nine

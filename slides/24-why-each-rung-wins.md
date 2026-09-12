@@ -20,9 +20,9 @@ and by definition that moves the expensive part *outside* the prefix, where it
 is billed fresh every turn. **That is the trade, stated honestly.** You take it
 anyway, because of the next line.
 
-**Rung 1's peak doubles every turn.** 97,024 here, 150,772 on the real page; a
-hard wall a turn or two later. A cache discount on an unbounded prompt is still
-an unbounded prompt.
+**Rung 1's peak doubles every turn.** 97,024 here; on the real page the next
+slide hits the wall for real, with a 232,396-token request the API refuses to
+accept. A cache discount on an unbounded prompt is still an unbounded prompt.
 
 > **Careful with rung 1 vs rung 2.** An earlier recording had this pair the
 > other way round — rung 2 costing twice rung 1 — because rung 1 finished in
