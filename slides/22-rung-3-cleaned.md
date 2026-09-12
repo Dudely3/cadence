@@ -1,5 +1,5 @@
 ---
-sessions: sess_mtpzc5h6_3
+sessions: sess_mtyusqcl_3
 run.label: run rung 3 live
 run.script: examples/ladder.ts
 run.args: --scenario shop --rung 3
@@ -15,13 +15,13 @@ run.note: one live rung, Haiku, about 5 cents
 
 | turns | peak prompt | total prompt | cost |
 | --- | --- | --- | --- |
-| 3 | 19,154 | 56,864 | $0.0464 |
+| 2 | 19,137 | 37,839 | $0.0312 |
 
 Tags, classes, wrappers, inline styles, script and style bodies. The model was
 never reading any of it. Headings become `#`, adjacent duplicates collapse,
 hidden nodes disappear.
 
-**36,077 → 19,154, and less than half the cost of rung 2.** Rungs 2 and 3
+**36,060 → 19,137, and less than half the cost of rung 2.** Rungs 2 and 3
 differ in exactly one thing: markup versus text. Same mode, same tools, same
 cache layout, same goal.
 

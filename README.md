@@ -145,12 +145,19 @@ answer sitting past its 200,000-character cut, and rung 2 confidently reports a 
 session by a different speaker. Both report `completed`. Rungs 3 and 4 get it right for
 two cents and one. It needs the network, so keep the local `ladder` as the rehearsable one.
 
-One result on the local page is worth knowing before you read the table: **rung 1 costs
-half what rung 2 costs.** Its prompt is append-only, so the whole two-turn run is billed
-six fresh tokens and 71,286 cache reads. Rung 2 does the right thing — state past the
-cache line — and by definition that moves the expensive part outside the cached prefix,
-where it is billed fresh every turn: 91,762 tokens at full price. The argument for rung 2
-is that the peak prompt stops growing, not that the invoice shrinks.
+One result on the local page is worth knowing before you read the table, and one trap
+with it. Rung 1's prompt is append-only, so almost none of it is billed fresh — nine
+tokens across a three-turn run, against rung 2's 60,936. Rung 2 does the right thing,
+state past the cache line, and by definition that moves the expensive part outside the
+cached prefix where it is billed at full price every turn. The argument for rung 2 is
+that the peak prompt stops growing, not that the invoice shrinks.
+
+The trap is comparing the two on cost at all. Rung 1 freezes everything it ever saw, so
+its bill is dominated by cache **writes** — 97,021 tokens at 1.25x in that same run —
+and both of those totals move with the turn count. One recording has rung 1 at half
+rung 2's cost; the next has it at double, on the same code and the same page, because
+the model took one more turn. Rungs 3 and 4 beat both in every run recorded so far;
+that ordering is structural and the 1-vs-2 ordering is not.
 
 Every rung caches now, which took a deliberate change: the shared system prompt carries a
 real operating guide (`packages/core/src/operating-guide.ts`) and the browser environment

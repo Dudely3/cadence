@@ -1,32 +1,32 @@
 ---
-sessions: sess_mtpzblz6_1, sess_mtpzbuj8_2, sess_mtpzc5h6_3, sess_mtpzh925_1
+sessions: sess_mtyus7an_1, sess_mtyushk9_2, sess_mtyusqcl_3, sess_mtyusy0t_4
 ---
 
-# Why rung 2 costs twice as much
+# Where each rung's tokens came from
 
-Where each rung's tokens actually came from:
+| rung | fresh (1x) | cache read (0.1x) | cache **write** (1.25x) | cost |
+| --- | --- | --- | --- | --- |
+| 1. naive | **9** | 102,054 | **97,021** | $0.1346 |
+| 2. + volatile tail | **60,936** | 5,170 | 5,580 | $0.0714 |
+| 3. + cleaned page | 27,088 | 10,340 | 411 | $0.0312 |
+| 4. + let it explore | **4,653** | 13,884 | 8,740 | $0.0216 |
 
-| rung | fresh (full price) | cache read (0.1x) | cost |
-| --- | --- | --- | --- |
-| 1. naive | **6** | 71,286 | $0.0486 |
-| 2. + volatile tail | **91,762** | 15,072 | $0.0980 |
-| 3. + cleaned page | 40,994 | 15,077 | $0.0464 |
-| 4. + let it explore | **5,016** | 17,773 | $0.0149 |
+Rung 1 pays full price for **nine tokens** — and 1.25x on ninety-seven
+thousand. An append-only prompt caches beautifully and *freezes everything it
+ever saw*. The discount is real; the bill still grows without limit.
 
-Rung 1 pays full price for **six tokens**. Its prompt is append-only, so every
-turn re-reads the last one at a tenth of the price. Rung 2 does the right thing
-— state past the cache line, replaced each turn — and by definition the
-expensive part is now *outside* the cached prefix, where it is billed fresh
-every single turn.
+Rung 2 does the right thing — state past the cache line, replaced each turn —
+and by definition that moves the expensive part *outside* the prefix, where it
+is billed fresh every turn. **That is the trade, stated honestly.** You take it
+anyway, because of the next line.
 
-**That is the trade, stated honestly.** Putting volatile content past the cache
-line is correct, and it moves that content from 0.1x to 1.0x. You do it anyway,
-because of what the next line says.
+**Rung 1's peak doubles every turn.** 97,024 here, 150,772 on the real page; a
+hard wall a turn or two later. A cache discount on an unbounded prompt is still
+an unbounded prompt.
 
-**Rung 1's peak doubles every turn.** 66,533 on turn 2 here; 150,772 on the real
-page; a hard wall a turn or two later. A cache discount on an unbounded prompt
-is still an unbounded prompt, and the discount does not save you from the
-context window.
-
-> Rung 3 is where the money argument comes back — and for a different reason.
-> Not better caching. Fewer bytes.
+> **Careful with rung 1 vs rung 2.** An earlier recording had this pair the
+> other way round — rung 2 costing twice rung 1 — because rung 1 finished in
+> two turns that day and rung 2 took three. Same code, same page. Whichever
+> model takes an extra turn loses, and that swamps the strategy. **Rungs 3 and
+> 4 beat both in every run**; that part is structural, and it is the claim to
+> make.

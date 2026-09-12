@@ -1,5 +1,5 @@
 ---
-sessions: sess_mtpzc5h6_3, sess_mtpzh925_1
+sessions: sess_mtyusqcl_3, sess_mtyusy0t_4
 ---
 
 # The floor nobody mentions
@@ -34,6 +34,13 @@ price on every token of every turn.
 operating guide in the system prompt and a full tool surface took the prefix
 from ~900 to **{{prefix_tokens}} tokens** — over the floor, written once, and
 read back at a tenth of the price on every turn after.
+
+**And `count_tokens` will lie to you about it.** The tool preamble the API adds
+does not sit inside a prefix cut at the system block, so it does not count
+toward the floor either. Measured: a prompt `count_tokens` put at 4,233 refused
+to cache on Haiku — the cacheable part was ~3,900 once the preamble was
+excluded, under the bar by 190, silent as ever. Put the line on the goal
+instead, as slide 8 does, and those tokens count toward clearing it.
 
 > Live, from the trace open beside this: **{{cache_read}} tokens** read from
 > cache, **{{fresh_input}}** billed fresh.

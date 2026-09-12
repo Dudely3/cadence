@@ -1,5 +1,5 @@
 ---
-sessions: sess_mtpzh925_1
+sessions: sess_mtyusy0t_4
 run.label: run rung 4 live
 run.script: examples/ladder.ts
 run.args: --scenario shop --rung 4
@@ -15,13 +15,13 @@ run.note: one live rung, Haiku, about 2 cents
 
 | turns | peak prompt | total prompt | cost |
 | --- | --- | --- | --- |
-| 3 | **9,430** | **25,498** | **$0.0149** |
+| 3 | **10,295** | **27,277** | **$0.0216** |
 
 Stop shipping the page. Send a small window of it and a tool that searches the
 rest. The model asks for what it needs instead of being handed everything in
 advance — which is what a person does with a long page.
 
-**5,016 tokens billed fresh; 17,773 read from cache.** With the page gone from
+**4,653 tokens billed fresh; 13,884 read from cache.** With the page gone from
 the prompt, what is left is mostly the stable prefix — so most of this run is
 paid for at a tenth of list price.
 

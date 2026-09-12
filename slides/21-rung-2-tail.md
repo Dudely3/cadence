@@ -1,5 +1,5 @@
 ---
-sessions: sess_mtpzbuj8_2
+sessions: sess_mtyushk9_2
 run.label: run rung 2 live
 run.script: examples/ladder.ts
 run.args: --scenario shop --rung 2
@@ -15,19 +15,21 @@ run.note: one live rung, Haiku, about 10 cents
 
 | turns | peak prompt | total prompt | cost |
 | --- | --- | --- | --- |
-| 3 | 36,077 | 107,626 | **$0.0980** |
+| 2 | 36,060 | 71,686 | $0.0714 |
 
 One change: state stops being *history* and becomes *the tail*. It is written
 after the last breakpoint and thrown away next turn. What stays frozen is only
 the brief outcome of each action — what was called, what came back.
 
-**66,533 → 36,077 in the biggest request.** Nothing was summarised and nothing
+**97,024 → 36,060 in the biggest request.** Nothing was summarised and nothing
 was hidden from the model. The current page is still there in full. It just
 isn't there twice.
 
-**And it costs twice what rung 1 cost.** 91,762 tokens billed fresh, against
-rung 1's six. Moving the page past the cache line is the correct decision and
-it moved the page from 0.1x to 1.0x.
+**And look what it did to the price of a token.** 60,936 billed fresh, against
+rung 1's nine. Moving the page past the cache line is the correct decision, and
+it moved the page from 0.1x to 1.0x. Rung 2 came out cheaper than rung 1 in
+this recording only because rung 1 took an extra turn — flip that and rung 2 is
+the expensive one, as an earlier recording had it.
 
 > Two true things collided here, and a slide that showed only one of them would
 > be selling you something. Next slide.
