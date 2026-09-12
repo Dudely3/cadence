@@ -1,5 +1,5 @@
 ---
-sessions: sess_mtes6cyx_1, sess_mtks1qz8_1
+sessions: sess_mtes6cyx_1, sess_mtyqcsi4_1
 run.label: run accuracy mode live
 run.mode: accuracy
 run.step: true

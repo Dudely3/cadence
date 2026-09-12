@@ -1,5 +1,5 @@
 ---
-sessions: example-rag-chatbot.json, sess_mtks1qz8_1
+sessions: example-rag-chatbot.json, sess_mtyqcsi4_1
 ---
 
 # Two shapes of context

@@ -299,7 +299,16 @@ function regionRules(turnIndex: number, cacheAtEnd: boolean, goalCached: boolean
   turn: (t: number) => Region;
 } {
   if (turnIndex === 0) {
-    return { statics: "cache-write", goal: "fresh", turn: () => "fresh" };
+    return {
+      statics: "cache-write",
+      // With a breakpoint of its own the goal is inside request 0's frozen
+      // prefix, along with the API's preamble above it. Without one it sits
+      // past the only line and is sent raw. Measured on sess_mtyqcsi4_1: the
+      // volatile tail counts 768 tokens and request 0 was billed 765 fresh, so
+      // everything above the tail was written — nothing else was outside.
+      goal: goalCached ? "cache-write" : "fresh",
+      turn: () => "fresh",
+    };
   }
   // "Cache everything" (cacheAt: "end") puts the breakpoint on the last block,
   // so request N-1 froze its ENTIRE prompt — including the goal, which the
