@@ -9,5 +9,6 @@ export * from "./mode";
 export * from "./rebind";
 export * from "./tracer";
 export * from "./context";
+export * from "./legacy-format";
 export * from "./agent";
 export * from "./summary";

@@ -27,6 +27,14 @@ export interface AgentConfig {
   params?: Record<string, string>;
   /** Optional observer for a live renderer — the terminal examples and the viz. */
   onEvent?: (event: AgentEvent) => void;
+  /**
+   * Somewhere for a caller to see what a mode put in ctx.scratch — the counters
+   * modes keep as private policy (legacy's parse failures, accuracy's failure
+   * budget). Pass an object and the loop threads it through as the scratch,
+   * rather than the caller having to reimplement the loop to observe one number.
+   * Omit it and the loop makes its own, exactly as before.
+   */
+  scratch?: Record<string, unknown>;
 }
 
 export type AgentEvent =
@@ -46,14 +54,14 @@ export type AgentEvent =
  * The only thing that varies between modes is the injected `mode` config.
  */
 export async function run(cfg: AgentConfig): Promise<RunResult> {
-  const { goal, env, tools, model, mode, tracer, onEvent, params } = cfg;
+  const { goal, env, tools, model, mode, tracer, onEvent, params, scratch } = cfg;
 
   const session = tracer.start(goal, mode.name);
   // Recorded before anything else: what this run was about, by name. A replay
   // re-points these at new values, which is what turns one recording into a
   // program rather than a video.
   if (params) session.params = params;
-  const ctx: RunContext = { goal, step: 0, scratch: {} };
+  const ctx: RunContext = { goal, step: 0, scratch: scratch ?? {} };
 
   // The environment can be dead before we ever ask the model anything — a
   // crashed page, a suspended audio context. Fail the run, don't crash the host.

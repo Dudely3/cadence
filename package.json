@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "setup": "playwright install chromium",
-    "check": "npm run typecheck && npm run deps && npm run replay && npm run drill && npm run slides && npm run tokens",
+    "check": "npm run typecheck && npm run deps && npm run replay && npm run drill && npm run slides && npm run tokens && npm run protocols",
     "test": "npm run check",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p packages/viz/tsconfig.json --noEmit",
     "deps": "tsx examples/deps-check.ts",
@@ -17,6 +17,7 @@
     "drill": "tsx examples/drill.ts",
     "slides": "tsx examples/slides-check.ts",
     "tokens": "tsx examples/tokens-check.ts",
+    "protocols": "tsx examples/protocol-check.ts",
     "spike": "tsx examples/spike.ts",
     "recover": "tsx examples/recover.ts",
     "compare": "tsx examples/compare.ts",

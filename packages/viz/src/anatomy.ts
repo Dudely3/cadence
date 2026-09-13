@@ -354,8 +354,14 @@ export function requestAnatomy(session: Session, turnIndex: number): RequestAnat
 
   // Wire order is tools → system → messages. The system block's breakpoint
   // covers the tool schemas ahead of it — one line freezes both.
-  const toolsBody = JSON.stringify(session.tools ?? [], null, 2);
-  blocks.push({
+  // json-in-text sends NO tools parameter — the catalogue is prose inside the
+  // system prompt instead. session.tools is still recorded (the mode reads the
+  // schema back off it to bind arguments), but drawing it here would show a
+  // block the request never carried, and would invent a tool preamble to go
+  // with it. The request is what this pane draws.
+  const nativeTools = session.contextShape?.toolProtocol !== "json-in-text";
+  const toolsBody = JSON.stringify(nativeTools ? (session.tools ?? []) : [], null, 2);
+  if (nativeTools) blocks.push({
     id: "tools",
     label: `tool schemas (${session.tools?.length ?? 0})`,
     role: "tools",
@@ -386,7 +392,7 @@ export function requestAnatomy(session: Session, turnIndex: number): RequestAnat
   // The API's own tool-use instructions, drawn between the system block and the
   // goal because that is where they land. Not ours, not in `messages`, and the
   // reason a system-block cache line leaves tokens billed fresh every turn.
-  if ((session.tools?.length ?? 0) > 0) {
+  if (nativeTools && (session.tools?.length ?? 0) > 0) {
     const n = preambleTokens(session.turns[turnIndex]?.usage?.model);
     blocks.push({
       id: "preamble",

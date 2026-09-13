@@ -19,6 +19,7 @@
  * the script silently runs with defaults.
  *
  *   npx tsx examples/browse.ts --step --headed --viewport 940x820 --mode accuracy
+ *   npx tsx examples/browse.ts --mode legacy      (json-in-text tool calls)
  *   npx tsx examples/browse.ts --replay sess_xxxx      # id, path, latest, or pinned
  *   npx tsx examples/browse.ts --url prairiedevcon.com --goal "..."   # any site
  *
@@ -41,7 +42,7 @@ import {
 } from "@cadence/core";
 import { FileTracer, loadTrace } from "@cadence/tracer-file";
 import { AnthropicModelClient } from "@cadence/model-anthropic";
-import { speedMode, accuracyMode, replayMode } from "@cadence/modes";
+import { speedMode, accuracyMode, replayMode, legacyMode } from "@cadence/modes";
 import { BrowserEnv } from "@cadence/env-browser";
 import { stepped, pressEnter, closeGate } from "./step";
 import { demoFlags, resolveReplayPath } from "./flags";
@@ -101,7 +102,14 @@ async function main(): Promise<void> {
     mode = replayMode(trace.session);
     console.log(`replaying ${replayPath} (${trace.session.turns.length} turns, mode was "${trace.session.mode}")`);
   } else {
-    mode = opts.mode === "accuracy" ? accuracyMode() : speedMode();
+    mode =
+      opts.mode === "accuracy"
+        ? accuracyMode()
+        : // The pre-native-tool-use protocol, same loop and same tools — only
+          // how a call gets from the model to the harness changes.
+          opts.mode === "legacy"
+          ? legacyMode()
+          : speedMode();
   }
   if (opts.step) {
     mode = stepped(mode);

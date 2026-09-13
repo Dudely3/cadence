@@ -106,6 +106,22 @@ export interface ContextShape {
    * sent — the one thing the anatomy pane must never do.
    */
   goalCache?: boolean;
+  /**
+   * How tool calls and their results are carried on the wire.
+   *
+   * "native" (the default, and what every recording before this field existed
+   * used) sends the API's `tools` parameter and gets back `tool_use` blocks the
+   * API pairs to `tool_result` blocks by id.
+   *
+   * "json-in-text" is the shape agents had before that parameter existed: the
+   * tool catalogue is prose in the system prompt, the model answers with one
+   * JSON blob of text, and history carries the harness's own paraphrase of what
+   * happened instead of paired results. See legacy-format.ts and legacyMode.
+   *
+   * ADDITIVE BY CONSTRUCTION: undefined means native, so no session recorded
+   * before this existed renders any differently.
+   */
+  toolProtocol?: "native" | "json-in-text";
 }
 
 /**

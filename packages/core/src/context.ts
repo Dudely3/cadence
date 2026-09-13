@@ -1,6 +1,7 @@
 import { OPERATING_GUIDE } from "./operating-guide";
 import type { Goal, Message, ContentBlock, Observation } from "./types";
 import type { Session } from "./turn";
+import { renderLegacyTurnResult } from "./legacy-format";
 import type { Environment } from "./environment";
 
 /**
@@ -130,7 +131,17 @@ export function buildMessages(
       });
     }
     messages.push({ role: "assistant", content: turn.assistantBlocks });
-    const results: ContentBlock[] = turn.toolResults.map((b) => ({ ...b }));
+    // Native: the recorded tool_result blocks go back as they are, and the API
+    // pairs each to its call by id. json-in-text has no ids and no pairing, so
+    // the whole turn collapses into one ordinary text block the harness wrote
+    // itself. Same Turn either way — only the rendering differs, which is what
+    // keeps this the one message builder.
+    const results: ContentBlock[] =
+      shape.toolProtocol === "json-in-text"
+        ? turn.toolResults.length > 0
+          ? [{ type: "text", text: renderLegacyTurnResult(turn) }]
+          : []
+        : turn.toolResults.map((b) => ({ ...b }));
     if (results.length > 0) {
       // Anchor a cache breakpoint on the last block of the most recent turn.
       if (isLast && shape.cacheAt !== "end") {

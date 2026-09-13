@@ -90,7 +90,7 @@ breaking it loudly, so most have a check attached.
 npm run check
 ```
 
-Typecheck plus five scripted checks. Free, no API key, no network, seconds.
+Typecheck plus six scripted checks. Free, no API key, no network, seconds.
 
 | Command | Covers |
 |---|---|
@@ -100,6 +100,7 @@ Typecheck plus five scripted checks. Free, no API key, no network, seconds.
 | `npm run drill` | Nine injected faults. Must report **9/9**. |
 | `npm run slides` | Every slide's bound recordings and launchable runs still resolve. |
 | `npm run tokens` | The viewer's token chart sums to the usage the API recorded. |
+| `npm run protocols` | The json-in-text tool protocol runs, binds args, and renders. |
 
 **Do not run these without asking — they make real API calls:** `spike`,
 `recover`, `compare`, `browse`, `jam`, `demo`, `demo:accuracy`, `try`,
@@ -151,6 +152,11 @@ the picture still matches the wire.
 ## Things that are not bugs
 
 - `naiveMode` is bad on purpose. It is rung 1 of the context ladder.
+- `legacyMode` sends no `tools` parameter and parses JSON out of text on purpose.
+  It is the protocol agents used before the API had one, kept runnable so the
+  comparison can be measured rather than asserted. Its positional argument
+  binding and paraphrased history are faithful, not sloppy — see
+  `packages/core/src/legacy-format.ts`.
 - `traces/example-rag-chatbot.json` and `example-solo-legacy.json` are
   hand-written, not captured. They exist so another architecture can be put
   beside a real run, and they set `session.presentation` to say which drawing
