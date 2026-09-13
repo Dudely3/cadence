@@ -411,7 +411,7 @@ selectors it re-resolves**, then asks the environment to find that element now. 
 recording that stored only `elementId: 2` would be re-runnable exactly once, on a page
 that had not moved.
 
-**On stage, type the product into the page.** Slide 24 declares an editable value:
+**On stage, type the product into the page.** Slide 27 declares an editable value:
 
 ```
 run.paramFlag: --items
