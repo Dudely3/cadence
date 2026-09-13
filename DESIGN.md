@@ -566,7 +566,7 @@ packages/
   core/            loop, Session/Turn/Action, tools, tracer, context builder,
                    operating guide, resilience decorators, rebind, summary
   model-anthropic/ the only provider-aware code (ModelClient → Claude)
-  modes/           speed · accuracy · replay · naive
+  modes/           speed · accuracy · replay · naive · legacy
   tracer-file/     Session → disk; live.json to tail, <id>.json to replay
   testkit/         scripted model client + chaos wrappers (free, deterministic)
   viz/             context visualizer, deck, and run control (React + Vite)

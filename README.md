@@ -95,11 +95,15 @@ no network, no cost — they drive a scripted model:
 npm run check
 ```
 
-That is `typecheck`, `deps`, `replay`, `drill` and `slides`, and each runs on its own too.
-CI runs exactly this on Node 20 and 22.
+That is `typecheck`, `deps`, `replay`, `drill`, `slides`, `tokens` and `protocols`, and
+each runs on its own too. CI runs exactly this on Node 20 and 22.
 
 `deps` covers plan dependency enforcement, `replay` covers replay fidelity (including
-mode-owned tools like `update_plan`), `drill` runs the resilience scenarios, and
+mode-owned tools like `update_plan`), `drill` runs the resilience scenarios, `tokens`
+asserts the viewer's token chart sums to the usage the API actually recorded for each
+request (it used to be `chars / 4` over the payload alone, which was 4.5x out on a real
+turn), `protocols` runs the pre-native-tool-use protocol end to end and pins down the
+argument shapes its parser has to survive, and
 `slides` renders every slide with the viewer's own markdown parser, checks that every
 recording a slide points at is still on disk, and checks that every run a slide can launch
 is one the control server will actually spawn. It also runs the parser against fenced code,
