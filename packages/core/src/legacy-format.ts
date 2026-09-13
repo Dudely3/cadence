@@ -92,11 +92,22 @@ export function renderLegacyTurnResult(turn: Turn): string {
   return [`Turn ${turn.index} result:`, ...lines].join("\n");
 }
 
-/** Split on commas that are not inside a JSON string or a nested structure. */
+/**
+ * Split on commas that are not inside a string or a nested structure.
+ *
+ * SINGLE quotes count as string delimiters, not just double. Models emit
+ * `type_text(3, 'Hello, world')` constantly, and a splitter that only knows
+ * about `"` cuts that in half — binding "Hello" to the text argument and
+ * dropping "world" into a property nothing reads. It does not throw and it does
+ * not warn; the run continues with half the string. That is the shape of bug
+ * this protocol produces, and it is worth being careful about here so the
+ * comparison measures the protocol rather than this parser.
+ */
 function splitArgs(raw: string): string[] {
   const out: string[] = [];
   let depth = 0;
-  let inStr = false;
+  /** The quote character that opened the current string, if any. */
+  let quote: string | null = null;
   let esc = false;
   let cur = "";
   for (const ch of raw) {
@@ -105,16 +116,18 @@ function splitArgs(raw: string): string[] {
       esc = false;
       continue;
     }
-    if (ch === "\\" && inStr) {
+    if (ch === "\\" && quote !== null) {
       cur += ch;
       esc = true;
       continue;
     }
-    if (ch === '"') {
-      inStr = !inStr;
+    if (ch === '"' || ch === "'") {
+      if (quote === null) quote = ch;
+      else if (quote === ch) quote = null;
       cur += ch;
       continue;
     }
+    const inStr = quote !== null;
     if (!inStr && (ch === "[" || ch === "{")) depth += 1;
     if (!inStr && (ch === "]" || ch === "}")) depth -= 1;
     if (!inStr && depth === 0 && ch === ",") {
@@ -130,6 +143,8 @@ function splitArgs(raw: string): string[] {
 
 const CALL_RE = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*\(([\s\S]*)\)\s*$/;
 const WRAPPING_QUOTES = /^['"]|['"]$/g;
+/** `name=value`, the keyword-argument shape models reach for unprompted. */
+const NAMED_ARG_RE = /^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([\s\S]+)$/;
 
 /** `click(5)` / `type_text(3, "hello")` -> a call, bound positionally. */
 function parseCall(expr: string, tools: ToolDef[]): LegacyCall | { error: string } {
@@ -146,13 +161,20 @@ function parseCall(expr: string, tools: ToolDef[]): LegacyCall | { error: string
   const names = def ? paramNames(def) : [];
   const input: Record<string, unknown> = {};
   splitArgs(argText).forEach((raw, i) => {
-    const key = names[i] ?? `arg${i}`;
+    // `click(elementId=2)`. Models reach for keyword arguments even when the
+    // catalogue shows positional ones, and binding the whole "elementId=2" to
+    // the first property is silent corruption — the tool gets a string where it
+    // wanted a number and fails somewhere further on. Accepting the shape is
+    // both kinder and more honest than pretending nobody writes it.
+    const named = NAMED_ARG_RE.exec(raw);
+    const key = named?.[1] && names.includes(named[1]) ? named[1] : (names[i] ?? `arg${i}`);
+    const value = named?.[2] ?? raw;
     try {
-      input[key] = JSON.parse(raw) as unknown;
+      input[key] = JSON.parse(value) as unknown;
     } catch {
       // An unquoted string, which models emit constantly. Take it literally:
       // the alternative is losing the turn over a missing pair of quotes.
-      input[key] = raw.replace(WRAPPING_QUOTES, "");
+      input[key] = value.replace(WRAPPING_QUOTES, "");
     }
   });
   return { name, input };

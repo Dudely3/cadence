@@ -18,37 +18,43 @@ prose, ask for JSON back, parse it yourself.**
 ```js
 // the system prompt, not a tools parameter
 "- click(elementId) — Click an element by id."
-// what the model sends back: text
+// what comes back: text, and nothing else
 '{"reasoning": "…", "action": ["click(2)"]}'
 ```
 
 Both recordings beside this slide are the **same goal, same page, same model,
-same tools**. Only the protocol differs.
+same tools.** Only the protocol differs.
 
 | | native | json-in-text |
 | --- | --- | --- |
-| turns | 2 | 2 |
-| cache read | 5,521 | 4,154 |
-| output | 344 | **681** |
+| tool schemas sent | 14 | **0** |
+| tool-use preamble | 317 tok | **0** |
 | system prompt | 14,533 ch | **17,374 ch** |
+| output | 344 | **681** |
 | **cost** | **$0.01098** | **$0.01105** |
 
-**Six tenths of one percent apart.** The old protocol is not expensive. It moves
-the tool descriptions out of the `tools` parameter and into the system prompt,
-where they cache just as well — and it skips the preamble the API injects, which
-is 317 tokens on Haiku. What it pays back is **output**: twice as many tokens,
-because the model now writes the protocol itself, and output is the dear one.
+**It works, and it is not expensive.** Across **24 runs and 48 model calls**:
+24 completed, every cart correct, and **zero replies that failed to parse.**
+Cost lands within 25% of native in either direction depending on the task —
+dearer on one goal here, cheaper on the other.
 
-**What it actually gives up isn't money.**
+The tool descriptions move out of the `tools` parameter and into the system
+prompt, where they cache exactly as well, and the API's preamble is skipped
+entirely. It pays that back in **output**, because the model now writes the
+protocol itself.
 
-- Nothing validates the arguments. `click(2)` binds position 0 to the first
-  property in the schema, and nobody checks the model agreed about the order.
-- Nothing pairs a call to its result. The harness writes its own **paraphrase**
-  of what happened into history — the model never sees what the tool returned.
-- A reply can be *unparseable*, which native tool use cannot be. That is a whole
-  failure class you now own.
+**So where did the fragility go?** Not where the story says. In 48 calls the
+model never produced JSON we could not read. Every failure found came from
+*fuzzing our own parser*, and each one was silent:
 
-> Open both in ☰ sessions. In the native run the pane shows a tool-schemas
-> block, a tool-use preamble and a `click()` block. In the old one those are
-> gone — there is one enormous system prompt and two blocks of text. The
-> protocol hasn't moved, it has dissolved into prose.
+- `type_text(3, 'Hello, world')` — a splitter that knows only `"` cuts that in
+  half, binds `"Hello"`, and drops the rest into a property nothing reads
+- `click(elementId=2)` — keyword arguments bind the literal string
+  `"elementId=2"` to the first parameter
+
+Neither throws. Neither warns. The run continues with the wrong argument.
+
+> The old protocol did not stay broken — the models got good at it. What is left
+> is a harness that must keep growing tolerance for every shape the model
+> invents, where each gap is a silent wrong answer rather than an error. That is
+> what the `tools` parameter buys: not reliability, **loudness**.

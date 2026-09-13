@@ -69,7 +69,14 @@ import {
 } from "@cadence/core";
 import { FileTracer } from "@cadence/tracer-file";
 import { AnthropicModelClient } from "@cadence/model-anthropic";
-import { speedMode, accuracyMode, replayMode } from "@cadence/modes";
+import {
+  speedMode,
+  accuracyMode,
+  replayMode,
+  legacyMode,
+  SCRATCH_PARSE_FAILURES,
+  SCRATCH_REPAIRS,
+} from "@cadence/modes";
 import { BrowserEnv } from "@cadence/env-browser";
 import { demoFlags } from "./flags";
 
@@ -140,7 +147,12 @@ function newEnv(): BrowserEnv {
 
 /** A mode fresh each time: accuracy keeps plan state on the instance. */
 function modeFor(name: string, maxSteps: number): ExecutionMode {
-  return name === "accuracy" ? accuracyMode({ maxSteps }) : speedMode({ maxSteps });
+  if (name === "accuracy") return accuracyMode({ maxSteps });
+  // Same loop, same tools — the pre-native-tool-use protocol. Included here so
+  // it is measured on the SAME goals and the same verification as the rest,
+  // rather than on a bench of its own where it could be flattered.
+  if (name === "legacy") return legacyMode({ maxSteps });
+  return speedMode({ maxSteps });
 }
 
 interface Outcome {
@@ -155,6 +167,9 @@ interface Outcome {
   reported: "read" | "inferred" | "other" | "none";
   correct: boolean;
   session: Session;
+  /** legacy only: replies that could not be parsed, and repairs that worked. */
+  parseFailures: number;
+  repairs: number;
 }
 
 /** Pull "Total: $685.08" out of the page the model was looking at. */
@@ -174,8 +189,12 @@ function completionSummary(session: Session): string {
 async function once(goal: Goal, modeName: string, maxSteps: number): Promise<Outcome> {
   const env = newEnv();
   const tracer = new FileTracer();
+  // Modes keep their private counters here; passing one in is how a caller
+  // reads them back without reimplementing the loop.
+  const scratch: Record<string, unknown> = {};
   try {
     const result = await run({
+      scratch,
       goal,
       env,
       tools: new ToolRegistry([...env.availableTools(), completionTool(goal)]),
@@ -210,6 +229,8 @@ async function once(goal: Goal, modeName: string, maxSteps: number): Promise<Out
       reported,
       correct,
       session: tracer.session!,
+      parseFailures: Number(scratch[SCRATCH_PARSE_FAILURES] ?? 0),
+      repairs: Number(scratch[SCRATCH_REPAIRS] ?? 0),
     };
   } finally {
     await env.dispose();
@@ -243,6 +264,8 @@ async function replayOf(source: Session): Promise<Outcome> {
       reported: "none",
       correct: cart.items === 1 && world.summary.includes(CHEAPEST_CAMPING),
       session: tracer.session!,
+      parseFailures: 0,
+      repairs: 0,
     };
   } finally {
     await env.dispose();
@@ -358,6 +381,22 @@ if (verifyRows.length > 0) {
     "\nJudge these by the cart, not by the sentence. The trap is not arithmetic —" +
       "\nboth numbers are correct sums of something. It is whether the model went back" +
       "\nand looked after it acted.",
+  );
+}
+
+// The failure class native tool use cannot have. Printed whenever a legacy
+// run is in the set, including when it is zero — "it never failed to parse"
+// is the interesting number, and it only means something if it was looked for.
+const legacyRows = [...billRows, ...verifyRows].filter((r) => r.mode === "legacy");
+if (legacyRows.length > 0) {
+  const failed = legacyRows.reduce((a, r) => a + r.parseFailures, 0);
+  const fixed = legacyRows.reduce((a, r) => a + r.repairs, 0);
+  const calls = legacyRows.reduce((a, r) => a + r.result.totals.llmCalls, 0);
+  console.log(
+    `
+json-in-text parsing: ${failed} unparseable repl${failed === 1 ? "y" : "ies"} ` +
+      `across ${calls} model call(s) in ${legacyRows.length} run(s); ` +
+      `${fixed} recovered by a repair round-trip.`,
   );
 }
 

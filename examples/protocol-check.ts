@@ -20,7 +20,7 @@ import {
   run,
   InMemoryTracer,
 } from "@cadence/core";
-import type { Goal, Session } from "@cadence/core";
+import type { Goal, Session, ToolDef } from "@cadence/core";
 import { legacyMode, SCRATCH_PARSE_FAILURES, SCRATCH_REPAIRS } from "@cadence/modes";
 import { NotepadEnv } from "@cadence/env-notepad";
 import { ScriptedModelClient, say } from "@cadence/testkit";
@@ -126,6 +126,42 @@ check(
   parseLegacyReply(blob("x", 'append_line(unquoted)'), tools).calls[0]?.input["line"] === "unquoted",
   "an unquoted string argument is taken literally rather than losing the turn",
 );
+
+// --- 4b. argument shapes models actually emit ---------------------------
+// Every one of these was written because it BROKE. A splitter that knew only
+// about double quotes cut `'Hello, world'` in half and bound "Hello" to the
+// text argument — no throw, no warning, the run continuing with half the
+// string. Silent corruption is this protocol's signature failure, and a parser
+// of mine producing it would have measured my bug instead of the protocol.
+const typeTools: ToolDef[] = [
+  {
+    name: "type_text",
+    description: "Type into an element.",
+    inputSchema: {
+      type: "object",
+      properties: { elementId: { type: "number" }, text: { type: "string" } },
+    },
+  },
+  { name: "click", description: "Click.", inputSchema: { type: "object", properties: { elementId: { type: "number" } } } },
+];
+const argCases: Array<[string, string, unknown]> = [
+  ["comma in a double-quoted string", 'type_text(3, "Hello, world")', { elementId: 3, text: "Hello, world" }],
+  ["comma in a SINGLE-quoted string", "type_text(3, 'Hello, world')", { elementId: 3, text: "Hello, world" }],
+  ["escaped quotes", 'type_text(3, "He said \\"hi\\"")', { elementId: 3, text: 'He said "hi"' }],
+  ["a close paren inside the string", 'type_text(3, "done)")', { elementId: 3, text: "done)" }],
+  ["parentheses inside the string", 'type_text(3, "Tent (2P)")', { elementId: 3, text: "Tent (2P)" }],
+  ["keyword-style arguments", "click(elementId=2)", { elementId: 2 }],
+  ["an array argument", "click([1,2])", { elementId: [1, 2] }],
+  ["unicode and punctuation", 'type_text(3, "café — 2 items")', { elementId: 3, text: "café — 2 items" }],
+  ["an empty string argument", 'type_text(3, "")', { elementId: 3, text: "" }],
+  ["surplus whitespace", "  click( 7 )  ", { elementId: 7 }],
+  ["a trailing comma", "click(2,)", { elementId: 2 }],
+  ["no arguments", "click()", {}],
+];
+for (const [label, expr, expected] of argCases) {
+  const got = parseLegacyReply(blob("r", expr), typeTools).calls[0]?.input;
+  check(JSON.stringify(got) === JSON.stringify(expected), `arg: ${label} -> ${JSON.stringify(got)}`);
+}
 
 // --- 5. a malformed reply is repaired, and the wasted call is billed ------
 const env2 = new NotepadEnv();
