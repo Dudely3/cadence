@@ -87,6 +87,13 @@ export interface RequestAnatomy {
   /** True while the turn exists but hasn't closed (live, in flight). */
   responsePending: boolean;
   /**
+   * The `result` blocks below the response are the NEXT request's input, not
+   * this turn's output — `SessionPresentation.resultsAreNextInput`. Only the
+   * heading over them changes; they are drawn either way, because "the system
+   * did this, outside the model" is the same fact in both architectures.
+   */
+  resultsAreNextInput: boolean;
+  /**
    * True when block tokens were scaled to the usage the API reported for this
    * request, so the columns sum to the invoice. False means every number on
    * screen is an estimate — say so rather than letting a reader assume.
@@ -427,8 +434,14 @@ export function requestAnatomy(session: Session, turnIndex: number): RequestAnat
   const hideGoal = session.presentation?.hideGoal === true;
   // A chatbot's turn boundary is offset from an agent's: user message in,
   // answer out. Encoded in a Turn, the NEXT user message lands in toolResults,
-  // and drawing it under "what came back" shows an input as an output. Keep it
-  // out of the response — it still appears in the next request, as history.
+  // so it must not be numbered or titled as this turn's output.
+  //
+  // It is still DRAWN here, under its own heading. Hiding it made the retrieval
+  // invisible until the turn after — the one moment in the deck where a reader
+  // is meant to watch chunks being fetched, and the pane showed an answer
+  // appearing from nowhere. An agent's tool results and a chatbot's retrieval
+  // are the same kind of thing in this pane: bytes the system produced outside
+  // the model, which the next request has to carry.
   const resultsAreNextInput = session.presentation?.resultsAreNextInput === true;
 
   let turnOfBlock = -1; // increments when an assistant message begins
@@ -548,7 +561,7 @@ export function requestAnatomy(session: Session, turnIndex: number): RequestAnat
         });
       }
     });
-    if (!resultsAreNextInput) turn.toolResults.forEach((b, i) => {
+    turn.toolResults.forEach((b, i) => {
       if (b.type === "tool_result") {
         const ex = extractLabel(b.content);
         response.push({
@@ -684,6 +697,7 @@ export function requestAnatomy(session: Session, turnIndex: number): RequestAnat
     cacheLineAt,
     response,
     responsePending: !!turn && !turn.closed,
+    resultsAreNextInput,
     reconciled,
     audit,
   };

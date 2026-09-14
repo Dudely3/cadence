@@ -1,3 +1,7 @@
+---
+sessions: example-rag-chatbot.json
+---
+
 # How we got here
 
 A chatbot loop and an agent loop look alike. They are not.

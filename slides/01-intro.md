@@ -1,3 +1,7 @@
+---
+sessions: example-rag-chatbot.json
+---
+
 # Speed vs. Accuracy
 
 ## Execution Modes for Agentic Workflows

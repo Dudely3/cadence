@@ -88,7 +88,11 @@ export function App(): React.JSX.Element {
   const [view, setView] = useState<"anatomy" | "blocks">("anatomy");
   const [showSessions, setShowSessions] = useState(false);
   const [showRun, setShowRun] = useState(false);
-  const [showSlides, setShowSlides] = useState(false);
+  // The deck is up from the first paint. Opening on a bare anatomy pane asks a
+  // first-time reader to work out what they are looking at from the picture
+  // alone; slide 1 names the recording it wants beside it, so the page can
+  // open on a slide and its evidence together. `d` still toggles it away.
+  const [showSlides, setShowSlides] = useState(true);
   const [slide, setSlide] = useState(0);
   // Moving between slides moves the viewer to that slide's recording. On by
   // default — it is the reason the binding exists — but a toggle, because
@@ -179,18 +183,36 @@ export function App(): React.JSX.Element {
   // an empty pane with 65 recordings sitting one menu away, which is a poor
   // answer to "clone it and follow along".
   //
-  // Open something real instead, once, as soon as the listing arrives:
-  // traces/pinned.json if it is there — that file exists precisely to be the
-  // offline fallback — and otherwise the newest recording, since the server
-  // returns the list newest-first. A live run still wins whenever one exists.
+  // Open something real instead, once, as soon as the listing arrives. In
+  // order of preference:
+  //
+  //   1. The first recording slide 1 names, because the deck opens on slide 1
+  //      and the whole point of the binding is that a slide arrives with its
+  //      evidence. This is the ONLY place the startup pairing is decided — the
+  //      deck-follow effect below skips slide 1 for exactly that reason, so
+  //      the two cannot race and hand the pane back and forth.
+  //   2. traces/pinned.json, which exists precisely to be the offline fallback.
+  //   3. The newest recording, since the server returns the list newest-first.
+  //
+  // A run that is actually live still wins over all three. "Actually" is
+  // load-bearing: live.json is gitignored but it is not cleaned up, so a
+  // rehearsal from yesterday leaves one sitting there forever, and opening on
+  // it means opening on "■ stalled — no result". Judge it by its mtime with
+  // the same window the header uses, so a run going right now is followed and
+  // a dead one steps aside for the deck.
   const pickedOpening = useRef(false);
   useEffect(() => {
     if (pickedOpening.current || files.length === 0) return;
     pickedOpening.current = true;
-    if (files.some((f) => f.name === "live.json")) return;
-    const opening = files.find((f) => f.name === "pinned.json") ?? files[0];
+    const live = files.find((f) => f.name === "live.json");
+    if (live && Date.now() - live.mtimeMs < STALL_MS) return;
+    const fromDeck = showSlides && linked ? SLIDES[0]?.sessions[0] : undefined;
+    const opening =
+      files.find((f) => f.name === fromDeck) ??
+      files.find((f) => f.name === "pinned.json") ??
+      files[0];
     if (opening) openTrace(opening.name);
-  }, [files, openTrace]);
+  }, [files, openTrace, showSlides, linked, STALL_MS]);
 
   // --- the slide the deck is on, and the recordings it is about ------------
   const slideDef = SLIDES[Math.min(slide, Math.max(0, SLIDES.length - 1))];
@@ -203,7 +225,12 @@ export function App(): React.JSX.Element {
   // Follow the deck: landing on a slide opens the first recording bound to it.
   // Applied ONCE per slide (the ref), so clicking another of the slide's
   // session chips, or pinning a new run to it, doesn't snap the view back.
-  const appliedSlide = useRef<number | null>(null);
+  //
+  // Slide 0 starts out ALREADY applied: the opening-trace effect above owns
+  // what is on screen at startup. Without this the deck link would fire on the
+  // first render — before the traces listing has even arrived — and either get
+  // overwritten a moment later or, worse, yank the pane off a live run.
+  const appliedSlide = useRef<number | null>(0);
   // The trace the link itself opened. The reverse link below must ignore it,
   // or the two effects hand the view back and forth forever.
   const linkOpened = useRef<string | null>(null);
@@ -577,7 +604,13 @@ export function App(): React.JSX.Element {
             ))}
           {anatomy && anatomy.response.some((b) => b.region === "result") && (
             <div className="pane-title response-title">
-              then the environment answered — not output, not billed here
+              {anatomy.resultsAreNextInput
+                ? // A chatbot's turn ends at the answer; what follows is the
+                  // user typing again and the retriever running for them. Same
+                  // slot, same "the model did not write this" point, different
+                  // cause — so say the cause rather than reuse the agent wording.
+                  "then the system composed the next input — not output, not billed here"
+                : "then the environment answered — not output, not billed here"}
             </div>
           )}
           {anatomy?.response
