@@ -366,11 +366,18 @@ export function requestAnatomy(session: Session, turnIndex: number): RequestAnat
   // schema back off it to bind arguments), but drawing it here would show a
   // block the request never carried, and would invent a tool preamble to go
   // with it. The request is what this pane draws.
+  //
+  // The same argument rules out an EMPTY tools block. A chatbot declares no
+  // tools, so nothing about tools is on its wire — and because block tokens are
+  // scaled to the region's recorded total, a block drawn for `[]` does not cost
+  // nothing: it takes a share of the statics the system prompt actually paid
+  // for (24 of them, on the RAG recording). Same guard the preamble below uses.
   const nativeTools = session.contextShape?.toolProtocol !== "json-in-text";
+  const toolCount = session.tools?.length ?? 0;
   const toolsBody = JSON.stringify(nativeTools ? (session.tools ?? []) : [], null, 2);
-  if (nativeTools) blocks.push({
+  if (nativeTools && toolCount > 0) blocks.push({
     id: "tools",
-    label: `tool schemas (${session.tools?.length ?? 0})`,
+    label: `tool schemas (${toolCount})`,
     role: "tools",
     region: rules.statics,
     breakpoint: false,
@@ -399,7 +406,7 @@ export function requestAnatomy(session: Session, turnIndex: number): RequestAnat
   // The API's own tool-use instructions, drawn between the system block and the
   // goal because that is where they land. Not ours, not in `messages`, and the
   // reason a system-block cache line leaves tokens billed fresh every turn.
-  if (nativeTools && (session.tools?.length ?? 0) > 0) {
+  if (nativeTools && toolCount > 0) {
     const n = preambleTokens(session.turns[turnIndex]?.usage?.model);
     blocks.push({
       id: "preamble",
