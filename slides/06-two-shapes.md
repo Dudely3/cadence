@@ -8,7 +8,7 @@ sessions: example-rag-chatbot.json, sess_mtyqcsi4_1
 | --- | --- | --- |
 | Frozen history | chat turns **+ every retrieval, forever** | brief action/result log |
 | Current truth | newest chunks, mid-prompt, alongside stale ones | one state block, replaced each turn |
-| Prefix stability | recompiled per request | byte-stable; block order is load-bearing |
+| Prefix stability | append-only — it caches fine, and grows forever | byte-stable; block order is load-bearing |
 | Ending | it stops | it **calls** something |
 
 ## Walk it, don't assert it
@@ -27,8 +27,9 @@ Both recordings are bound to this slide. Open the chatbot first.
    leaves. By turn 3 the prompt carries **three** sets of retrieved chunks.
 4. **Click the turn-2 chunk block.** Its own header says it:
    *"[api-keys §2] came back AGAIN, with a different score and different
-   neighbors — same fact, new bytes, new position."* Same document, moved.
-   Every byte after that point is a cache miss.
+   neighbors — same fact, new bytes, new position."* The same document, paid
+   for twice, and now in the prompt twice — note the cache is *fine* with
+   that: it appended, so turn 2 reads 2,610 tokens back and writes 1,620.
 5. **Click the turn-3 chunk block.** *"The rotation chunk fell OUT of the window
    entirely. The model can no longer see text it cited two answers ago."*
    Two stale copies are still in the prompt. The current one is gone.

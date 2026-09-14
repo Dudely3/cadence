@@ -40,10 +40,11 @@
           }
         ],
         "usage": {
-          "model": "rag-pipeline (recompiled per request)",
+          "model": "rag-pipeline (append-only chat + chunks)",
           "inputTokens": 940,
           "outputTokens": 42,
-          "cacheReadTokens": 0
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
         },
         "timing": {
           "startedMs": 1786909800000,
@@ -74,10 +75,11 @@
           }
         ],
         "usage": {
-          "model": "rag-pipeline (recompiled per request)",
-          "inputTokens": 2610,
+          "model": "rag-pipeline (append-only chat + chunks)",
+          "inputTokens": 6,
           "outputTokens": 205,
-          "cacheReadTokens": 0
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 2610
         },
         "timing": {
           "startedMs": 1786909860000,
@@ -108,10 +110,11 @@
           }
         ],
         "usage": {
-          "model": "rag-pipeline (recompiled per request)",
-          "inputTokens": 4230,
+          "model": "rag-pipeline (append-only chat + chunks)",
+          "inputTokens": 6,
           "outputTokens": 187,
-          "cacheReadTokens": 0
+          "cacheReadTokens": 2610,
+          "cacheWriteTokens": 1620
         },
         "timing": {
           "startedMs": 1786909950000,
@@ -131,10 +134,11 @@
         ],
         "toolResults": [],
         "usage": {
-          "model": "rag-pipeline (recompiled per request)",
-          "inputTokens": 5640,
+          "model": "rag-pipeline (append-only chat + chunks)",
+          "inputTokens": 6,
           "outputTokens": 226,
-          "cacheReadTokens": 0
+          "cacheReadTokens": 4230,
+          "cacheWriteTokens": 1410
         },
         "timing": {
           "startedMs": 1786910020000,
@@ -153,9 +157,10 @@
     "totals": {
       "wallMs": 222600,
       "llmCalls": 4,
-      "inputTokens": 13420,
+      "inputTokens": 958,
       "outputTokens": 660,
-      "cacheReadTokens": 0
+      "cacheReadTokens": 6840,
+      "cacheWriteTokens": 5640
     }
   }
 }
