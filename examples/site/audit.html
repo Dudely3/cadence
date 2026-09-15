@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Trailhead Supply - Returns Audit</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; background: #f6f5f2; color: #1a1a19; }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 14px 28px; background: #24421f; color: #fff; }
+  header h1 { font-size: 20px; margin: 0; }
+  main { max-width: 820px; margin: 0 auto; padding: 20px; }
+  section { background: #fff; border: 1px solid #e0ded8; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+  h2 { font-size: 15px; margin: 0 0 8px; border-bottom: 2px solid #24421f33; padding-bottom: 6px; }
+  p.hint { font-size: 12px; color: #666; margin: 6px 0 10px; }
+  button { background: #24421f; color: #fff; border: none; border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; margin: 0 4px 0 0; }
+  button:hover { background: #35592f; }
+  .unit { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid #f0efeb; font-size: 13px; }
+  .unit .id { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; min-width: 72px; }
+  .unit .status { min-width: 150px; color: #666; }
+  .unit .status.set { color: #24421f; font-weight: 700; }
+  .pane { background: #f2f6fb; border: 1px solid #c8d8ea; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
+  .pane .big { font-size: 15px; font-weight: 700; }
+  .filed { background: #eaf6ea; border: 1px solid #b7ddb7; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+  .filed .big { font-size: 20px; font-weight: 700; color: #1f6d1f; }
+  .err { background: #fdecea; border: 1px solid #f5c2bd; color: #8a1c10; border-radius: 6px; padding: 8px 10px; font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Trailhead Supply - Returns Audit</h1>
+  <span id="badge">0 of 6 dispositioned</span>
+</header>
+<main id="app"></main>
+
+<script>
+  // An audit whose COMPLETION CANNOT BE JUDGED BY LOOKING.
+  //
+  // Three earlier traps in this repo failed for one shared reason: the page
+  // answered "am I done?" for free. shop.html re-renders the cart total, the
+  // cart count and the item list into every state block, so a model that
+  // re-observes is told the answer, and across fourteen recorded runs none of
+  // them ever had to guess. That is a property of the PAGE, not of the goals
+  // written against it.
+  //
+  // This page removes that help. Correctness here is a fact about ORDER, and
+  // order leaves no trace:
+  //
+  //   - A unit's condition is discoverable ONLY by inspecting it, and the
+  //     result appears ONLY in the detail pane at the top, which holds one
+  //     unit at a time and is overwritten by the next inspection. It is never
+  //     written into the row.
+  //   - Dispositions are LOCKED until all six units have been inspected. This
+  //     is the whole point, and it took a wasted measurement to find: without
+  //     the lock, a model just inspects a unit and judges it on the next turn,
+  //     strict alternation, never needing to remember anything. Speed scored
+  //     3/3 that way in exactly the 14-turn floor. Locality, not tracking.
+  //     With the lock, the first legal disposition comes AFTER five of the six
+  //     conditions have already been overwritten in the pane - and the pane
+  //     lives in the volatile tail, which this harness replaces every turn.
+  //     What the model learned on turn 1 is not in its turn-7 request unless
+  //     it wrote it down. Re-inspecting is allowed and costs a turn, so a run
+  //     may also buy its way out with roughly 50% more turns, which is a
+  //     result worth having rather than a hole worth closing.
+  //   - Once dispositioned, EVERY row reads the same: id, disposition, done.
+  //     A row that was inspected first and a row that was guessed are
+  //     character-for-character identical.
+  //
+  // So re-observation tells you the count and tells you nothing about whether
+  // the count is worth anything. The only way to know you are finished is to
+  // have kept a ledger of which units you inspected and what each one said -
+  // which is what a plan with dependencies IS. This is the first page here
+  // where update_plan's gate has anything to refuse.
+  //
+  // It does not cheat. Filing the audit reports the exception count out loud,
+  // so nothing is hidden from a model that bothers to read what came back. The
+  // headline is deliberately the reassuring half - "AUDIT FILED" - because a
+  // run that reports success off those two words without reading the rest of
+  // the line is the premature completion this page exists to catch.
+  //
+  // Recovery is always possible: inspect late, set the disposition again, and
+  // the unit stops being an exception. Being wrong here is never terminal,
+  // which keeps this a test of judgement rather than a test of luck.
+  const UNITS = [
+    { id: "RU-101", condition: "intact" },
+    { id: "RU-102", condition: "damaged" },
+    { id: "RU-103", condition: "damaged" },
+    { id: "RU-104", condition: "intact" },
+    { id: "RU-105", condition: "damaged" },
+    { id: "RU-106", condition: "intact" },
+  ];
+  // intact -> Restock, damaged -> Scrap.
+  const RIGHT = { intact: "Restock", damaged: "Scrap" };
+
+  const state = {
+    inspected: {},    // id -> true, once inspected at any point
+    disposition: {},  // id -> "Restock" | "Scrap"
+    blindAt: {},      // id -> true if the CURRENT disposition was set without a prior inspection
+    pane: null,       // the one inspection result on screen
+    filed: null,      // { exceptions } once filed
+    error: null,
+  };
+
+  const inspectedCount = () => UNITS.filter(function (u) { return state.inspected[u.id]; }).length;
+  const allInspected = () => inspectedCount() === UNITS.length;
+
+  const dispositioned = () => UNITS.filter(function (u) { return state.disposition[u.id]; }).length;
+
+  function inspect(id) {
+    const unit = UNITS.find(function (u) { return u.id === id; });
+    state.inspected[id] = true;
+    state.error = null;
+    state.pane = { id: id, condition: unit.condition };
+    render();
+  }
+
+  function setDisposition(id, value) {
+    // THE LOCK. Nothing can be judged until every unit has been scanned, which
+    // is what turns this from a local decision into a remembered one: by the
+    // time the first disposition is legal, five of the six conditions have
+    // already scrolled out of the detail pane.
+    if (!allInspected()) {
+      state.error =
+        "Dispositions are locked until all six units are inspected (" +
+        inspectedCount() + " of 6 done).";
+      render();
+      return;
+    }
+    state.error = null;
+    state.disposition[id] = value;
+    // The ordering fact, captured at the moment of the decision. Setting it
+    // again after a late inspection clears the flag - recovery works.
+    state.blindAt[id] = !state.inspected[id];
+    render();
+  }
+
+  // An exception is a disposition that was guessed, or one that contradicts
+  // the unit's actual condition. Both are only knowable here, not on the row.
+  function exceptions() {
+    return UNITS.filter(function (u) {
+      const d = state.disposition[u.id];
+      if (!d) return true;
+      return state.blindAt[u.id] || d !== RIGHT[u.condition];
+    }).length;
+  }
+
+  function file() {
+    state.filed = { exceptions: exceptions() };
+    render();
+  }
+
+  function render() {
+    const app = document.getElementById("app");
+    let html = "";
+
+    if (state.filed) {
+      html += '<div class="filed"><div class="big">AUDIT FILED</div>' +
+        "<div>exceptions: " + state.filed.exceptions + "</div></div>";
+    }
+
+    html += '<section><h2>Inspection detail</h2>';
+    if (state.pane) {
+      html += '<div class="pane"><div class="big">' + state.pane.id + "</div>" +
+        "<div>condition: " + state.pane.condition + "</div></div>" +
+        '<p class="hint">This pane shows the most recent inspection only.</p>';
+    } else {
+      html += '<p class="hint">No unit inspected yet.</p>';
+    }
+    html += "</section>";
+
+    html += '<section><h2>Returned units</h2>' +
+      '<p class="hint">Inspect every unit first. Dispositions unlock once all six have been inspected.</p>';
+    for (const u of UNITS) {
+      const d = state.disposition[u.id];
+      html += '<div class="unit"><span class="id">' + u.id + "</span>" +
+        '<span class="status' + (d ? " set" : "") + '">' + (d ? d + " - done" : "no disposition") + "</span>" +
+        '<button data-act="inspect" data-id="' + u.id + '" aria-label="Inspect ' + u.id + '">Inspect</button>' +
+        '<button data-act="Restock" data-id="' + u.id + '" aria-label="Restock ' + u.id + '">Restock</button>' +
+        '<button data-act="Scrap" data-id="' + u.id + '" aria-label="Scrap ' + u.id + '">Scrap</button>' +
+        "</div>";
+    }
+    html += "</section>";
+
+    html += '<section><h2>File</h2><p class="hint">File the audit once every unit has a disposition.</p>' +
+      '<button data-file="1" aria-label="File audit">File audit</button></section>';
+
+    if (state.error) html += '<div class="err">' + state.error + "</div>";
+
+    app.innerHTML = html;
+    document.getElementById("badge").textContent =
+      state.filed
+        ? "AUDIT FILED"
+        : inspectedCount() + " of 6 inspected, " + dispositioned() + " of 6 dispositioned";
+
+    const all = app.querySelectorAll("button");
+    for (const btn of all) {
+      if (btn.getAttribute("data-file")) { btn.addEventListener("click", file); continue; }
+      const act = btn.getAttribute("data-act");
+      const id = btn.getAttribute("data-id");
+      if (act === "inspect") btn.addEventListener("click", function () { inspect(id); });
+      else if (act) btn.addEventListener("click", function () { setDisposition(id, act); });
+    }
+  }
+  render();
+</script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Trailhead Supply - Returns</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; background: #f6f5f2; color: #1a1a19; }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 14px 28px; background: #24421f; color: #fff; }
+  header h1 { font-size: 20px; margin: 0; }
+  main { max-width: 760px; margin: 0 auto; padding: 20px; }
+  section { background: #fff; border: 1px solid #e0ded8; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+  h2 { font-size: 15px; margin: 0 0 4px; border-bottom: 2px solid #24421f33; padding-bottom: 6px; }
+  p.hint { font-size: 12px; color: #666; margin: 6px 0 10px; }
+  button { background: #24421f; color: #fff; border: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer; margin: 0 6px 6px 0; }
+  button:hover { background: #35592f; }
+  button.chosen { background: #7a5c12; }
+  .picked { font-size: 13px; color: #24421f; font-weight: 700; }
+  .err { background: #fdecea; border: 1px solid #f5c2bd; color: #8a1c10; border-radius: 6px; padding: 8px 10px; font-size: 13px; margin-top: 8px; }
+  .saved { background: #eaf6ea; border: 1px solid #b7ddb7; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
+  .saved .big { font-size: 16px; font-weight: 700; color: #1f6d1f; }
+  .saved.loud { padding: 18px 16px; }
+  .saved.loud .big { font-size: 20px; }
+  .saved .ref { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 15px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Trailhead Supply - Returns</h1>
+  <span id="stage-badge">Return request</span>
+</header>
+<main id="app"></main>
+
+<script>
+  // A twelve-step gated workflow, built for ONE purpose: to be a task whose
+  // remaining work is NOT visible in the current state.
+  //
+  // examples/site/shop.html is completely observable - cart count, contents and
+  // total are re-rendered into every state block, so "am I finished?" is always
+  // answerable by looking. Across eleven recorded runs of goals B and C no model
+  // ever had to guess, which is why neither goal ever caught a run declaring
+  // success early: there was nothing to be early about. That is a property of
+  // the PAGE, not of the goals.
+  //
+  // Two things make this page different, and the second one took a wasted
+  // measurement to learn.
+  //
+  //   1. FALSE SUMMITS. Three times on the way through, a section completes and
+  //      the page answers with a large green panel carrying a reference number.
+  //      The middle one - DRAFT-7741, after step 6 - is the loudest thing on the
+  //      page and is exactly what a finished request looks like on most real
+  //      sites. Five steps remain below it. Nothing nags.
+  //
+  //   2. LENGTH. The first version of this page had five steps, and a false
+  //      summit one click from the end caught nobody: speed finished in exactly
+  //      the six-turn floor, 3/3. Premature completion is not a puzzle a model
+  //      fails at turn two, it is what happens once a sequence is longer than it
+  //      can comfortably hold. Twelve steps across four sections is an attempt
+  //      to reach that; five was not close.
+  //
+  // The page does not cheat. The header still reads "step N of 12", so the truth
+  // is in every state block - it is just never the loud thing in it. A trap that
+  // HID the information would prove nothing about a model's judgement.
+  //
+  // Order is enforced but not hidden: every control stays clickable, and an
+  // out-of-order click is REJECTED with a visible message rather than being
+  // disabled or silently ignored. A failure the model can read is worth more
+  // than a control it cannot press (invariant 8), and it keeps Playwright out of
+  // a five-second timeout on every probe.
+  const ORDERS = [
+    { id: "ORD-1041", items: ["Alpine Tent 2P"] },
+    { id: "ORD-1067", items: ["Dynamic Rope 60m", "Chalk Bag"] },
+    { id: "ORD-1092", items: ["Camp Stove"] },
+  ];
+
+  // Eleven choices then a submit. `after` hangs a confirmation panel off the
+  // step that closes a section.
+  const STEPS = [
+    { key: "order",      section: "Eligibility", label: "Order",             values: null },
+    { key: "item",       section: "Eligibility", label: "Item",              values: null },
+    { key: "window",     section: "Eligibility", label: "Purchase window",   values: ["Within 90 days", "Over 90 days"],
+      after: { title: "Eligibility confirmed", ref: "REF-3301", loud: false } },
+    { key: "reason",     section: "Fault",       label: "Reason",            values: ["Arrived damaged", "Wrong size", "No longer needed"] },
+    { key: "severity",   section: "Fault",       label: "Severity",          values: ["Minor", "Major", "Unusable"] },
+    { key: "packaging",  section: "Fault",       label: "Original packaging", values: ["Retained", "Discarded"],
+      after: { title: "Draft saved", ref: "DRAFT-7741", loud: true } },
+    { key: "resolution", section: "Resolution",  label: "Resolution",        values: ["Store credit", "Replacement"] },
+    { key: "shipping",   section: "Resolution",  label: "Return shipping",   values: ["Drop-off", "Pickup"] },
+    { key: "collection", section: "Resolution",  label: "Collection window", values: ["This week", "Next week"],
+      after: { title: "Resolution recorded", ref: "REF-8890", loud: false } },
+    { key: "label",      section: "Dispatch",    label: "Return label",      values: ["PDF", "QR code"] },
+    { key: "contact",    section: "Dispatch",    label: "Contact preference", values: ["Email", "SMS"] },
+  ];
+
+  // Fixed, so a check can assert on them and a replay stays deterministic.
+  const RMA_NUMBER = "RMA-48213";
+
+  const state = { issued: false, error: null };
+  for (const s of STEPS) state[s.key] = null;
+
+  const filled = () => STEPS.filter(function (s) { return state[s.key]; }).length;
+  // Step i is available only once every earlier step is filled in.
+  function blocker(key) {
+    const i = STEPS.findIndex(function (s) { return s.key === key; });
+    const upto = i < 0 ? STEPS.length : i;
+    for (let j = 0; j < upto; j++) {
+      if (!state[STEPS[j].key]) return "Choose " + STEPS[j].label + " first.";
+    }
+    return null;
+  }
+
+  function valuesFor(step) {
+    if (step.key === "order") return ORDERS.map(function (o) { return o.id; });
+    if (step.key === "item") {
+      const o = ORDERS.find(function (x) { return x.id === state.order; });
+      return o ? o.items : [];
+    }
+    return step.values;
+  }
+
+  function pick(key, value) {
+    const b = blocker(key);
+    if (b) { state.error = "Cannot set " + key + " yet. " + b; render(); return; }
+    state.error = null;
+    state[key] = value;
+    // Changing the order invalidates an item picked from the previous one.
+    if (key === "order") state.item = null;
+    render();
+  }
+
+  function submit() {
+    const b = blocker("__submit__");
+    if (b) { state.error = "Cannot submit yet. " + b; render(); return; }
+    state.error = null;
+    state.issued = true;
+    render();
+  }
+
+  function panel(title, ref, loud, extra) {
+    return '<div class="saved' + (loud ? " loud" : "") + '"><div class="big">' + title + "</div>" +
+      (extra ? "<div>" + extra + "</div>" : "") +
+      '<div class="ref">' + ref + "</div></div>";
+  }
+
+  function render() {
+    const app = document.getElementById("app");
+    let html = "";
+
+    if (state.issued) {
+      const summary = [state.item, state.reason, state.resolution].join(" &middot; ");
+      html += panel("Return authorized", RMA_NUMBER, true, "Status: RMA ISSUED<br>" + summary);
+    } else {
+      // The most recent section confirmation, and only that one - a stack of
+      // three green panels would read as a progress log, which is the opposite
+      // of a false summit.
+      let latest = null;
+      for (const s of STEPS) {
+        if (s.after && state[s.key]) latest = s.after;
+      }
+      if (latest) html += panel(latest.title, latest.ref, latest.loud, "Your return request has been saved.");
+    }
+
+    let openSection = null;
+    for (const step of STEPS) {
+      if (step.section !== openSection) {
+        if (openSection !== null) html += "</section>";
+        html += "<section><h2>" + step.section + "</h2>";
+        openSection = step.section;
+      }
+      const values = valuesFor(step);
+      html += '<p class="hint">' + step.label + "</p><div>";
+      for (const v of values) {
+        html += '<button data-key="' + step.key + '" data-value="' + v + '" class="' +
+          (state[step.key] === v ? "chosen" : "") + '" aria-label="Set ' + step.label + " " + v + '">' + v + "</button>";
+      }
+      if (values.length === 0) html += '<span class="hint">Choose an order to see its items.</span>';
+      html += "</div>";
+      if (state[step.key]) html += '<div class="picked">' + step.label + ": " + state[step.key] + "</div>";
+    }
+    if (openSection !== null) html += "</section>";
+
+    html += '<section><h2>Submit</h2><p class="hint">Submit the request to receive an RMA number.</p>' +
+      '<button data-submit="1" aria-label="Submit return request">Submit return request</button>' +
+      (state.issued ? '<div class="picked">Submitted. ' + RMA_NUMBER + "</div>" : "") + "</section>";
+
+    if (state.error) html += '<div class="err">' + state.error + "</div>";
+    app.innerHTML = html;
+
+    document.getElementById("stage-badge").textContent =
+      state.issued ? "RMA ISSUED" : "step " + (filled() + 1) + " of 12";
+
+    // Re-bind after the innerHTML rewrite. No regex: the key and value ride on
+    // data attributes, so nothing here has to parse a label.
+    const all = app.querySelectorAll("button");
+    for (const btn of all) {
+      if (btn.getAttribute("data-submit")) { btn.addEventListener("click", submit); continue; }
+      const key = btn.getAttribute("data-key");
+      const value = btn.getAttribute("data-value");
+      if (key) btn.addEventListener("click", function () { pick(key, value); });
+    }
+  }
+  render();
+</script>
+</body>
+</html>
