@@ -44,15 +44,11 @@ entirely. It pays that back in **output**, because the model now writes the
 protocol itself.
 
 **So where did the fragility go?** Not where the story says. In 48 calls the
-model never produced JSON we could not read. Every failure found came from
-*fuzzing our own parser*, and each one was silent:
-
-- `type_text(3, 'Hello, world')` — a splitter that knows only `"` cuts that in
-  half, binds `"Hello"`, and drops the rest into a property nothing reads
-- `click(elementId=2)` — keyword arguments bind the literal string
-  `"elementId=2"` to the first parameter
-
-Neither throws. Neither warns. The run continues with the wrong argument.
+model never produced JSON we could not read. Every failure came from *fuzzing
+our own parser*, and each one was silent — `type_text(3, 'Hello, world')`,
+where a splitter that knows only `"` cuts the string in half and drops the rest
+into a property nothing reads. It does not throw. It does not warn. The run
+continues with the wrong argument.
 
 > The old protocol did not stay broken — the models got good at it. What is left
 > is a harness that must keep growing tolerance for every shape the model

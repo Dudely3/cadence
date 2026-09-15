@@ -31,10 +31,10 @@ Each rung is one idea:
   search for the rest
 
 **Read the turns column before the cost column.** Rungs 1 and 2 swap places
-depending on which one happens to take an extra turn — a coin toss, and five
+depending on which one happens to take an extra turn — a coin toss, and four
 slides on there is a table that shows why. **3 and 4 beat both every time**,
 and that is the claim worth making.
 
 > `npm run ladder` runs all four and writes four traces — the four bound to
-> this slide. The next four slides take one rung each, with that rung's
-> recording already open beside it.
+> this slide. The next three slides walk the rungs, with each one's recording
+> already open beside it.
