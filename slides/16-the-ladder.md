@@ -30,11 +30,10 @@ Each rung is one idea:
 - **4** — stop shipping the page at all; send a small window and let the model
   search for the rest
 
-**Read the turns column before the cost column.** Rung 1 took one more turn
-than rung 2 here, and on an append-only prompt one extra turn is most of the
-bill. An earlier recording had them the other way round for exactly that
-reason. The ordering of 1 and 2 is a coin toss; **3 and 4 beat both every
-time**, and that is the claim worth making.
+**Read the turns column before the cost column.** Rungs 1 and 2 swap places
+depending on which one happens to take an extra turn — a coin toss, and five
+slides on there is a table that shows why. **3 and 4 beat both every time**,
+and that is the claim worth making.
 
 > `npm run ladder` runs all four and writes four traces — the four bound to
 > this slide. The next four slides take one rung each, with that rung's

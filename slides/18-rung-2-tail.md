@@ -27,9 +27,7 @@ isn't there twice.
 
 **And look what it did to the price of a token.** 60,936 billed fresh, against
 rung 1's nine. Moving the page past the cache line is the correct decision, and
-it moved the page from 0.1x to 1.0x. Rung 2 came out cheaper than rung 1 in
-this recording only because rung 1 took an extra turn — flip that and rung 2 is
-the expensive one, as an earlier recording had it.
+it moved the page from 0.1x to 1.0x.
 
 > Two true things collided here, and a slide that showed only one of them would
-> be selling you something. Next slide.
+> be selling you something. The accounting is three slides on.

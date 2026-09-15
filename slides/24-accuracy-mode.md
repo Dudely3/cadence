@@ -33,5 +33,5 @@ Same loop, same tools, same environment. Only the **policy** changed.
 
 Three turns of work, six model calls. Against the speed run of the same task,
 also bound to this slide, that is **14× the cost** — $0.0943 against $0.0068.
-The requests column shows where it goes, call by call, and the last slide in
-the deck puts all three modes side by side.
+The requests column shows where it goes, call by call, and the comparison two
+slides on puts all three modes side by side.
