@@ -69,6 +69,8 @@ export function RunPanel(props: {
 }): React.JSX.Element {
   const { preset, presetKey } = props;
   const [goal, setGoal] = useState(DEFAULT_GOAL);
+  // Empty means the example's own page — the local shop file:// URL.
+  const [url, setUrl] = useState("");
   const [mode, setMode] = useState<"speed" | "accuracy" | "replay">("speed");
   const [step, setStep] = useState(true);
   const [headed, setHeaded] = useState(true);
@@ -84,17 +86,38 @@ export function RunPanel(props: {
   const since = useRef(0);
   const logEnd = useRef<HTMLDivElement | null>(null);
 
+  // The preset currently loaded, so it can be UNloaded again. Without this the
+  // panel only ever gains settings: slide 26 sets `run.step: false`, slide 27
+  // has no run at all, and the unattended run you configured for 26 silently
+  // became the default for every ad-hoc run after it.
+  const armed = useRef<string | undefined>(undefined);
+
   // Load the slide's preset into the editable fields. Keyed on the slide, so
   // moving between slides re-arms it but typing in the goal box is never
   // overwritten while you're on one slide.
   useEffect(() => {
-    if (!preset) return;
-    if (preset.goal !== undefined) setGoal(preset.goal);
-    if (preset.mode !== undefined) setMode(preset.mode);
-    else if (preset.replay !== undefined) setMode("replay");
-    if (preset.step !== undefined) setStep(preset.step);
-    if (preset.headed !== undefined) setHeaded(preset.headed);
-    setParamValue(preset.paramValue ?? "");
+    if (preset) {
+      if (preset.goal !== undefined) setGoal(preset.goal);
+      setUrl(preset.url ?? "");
+      if (preset.mode !== undefined) setMode(preset.mode);
+      else if (preset.replay !== undefined) setMode("replay");
+      if (preset.step !== undefined) setStep(preset.step);
+      if (preset.headed !== undefined) setHeaded(preset.headed);
+      setParamValue(preset.paramValue ?? "");
+      armed.current = presetKey;
+      return;
+    }
+    // No preset here. Restore the plain panel's own defaults — but only if a
+    // preset is still loaded. Closing the deck and reopening it also lands
+    // here, and a goal typed by hand must survive that.
+    if (armed.current === undefined) return;
+    armed.current = undefined;
+    setGoal(DEFAULT_GOAL);
+    setUrl("");
+    setMode("speed");
+    setStep(true);
+    setHeaded(true);
+    setParamValue("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [presetKey]);
 
@@ -162,7 +185,7 @@ export function RunPanel(props: {
       viewport: preset?.viewport ?? (ownsGoal ? "" : "940x820"),
       ...(preset?.script ? { script: preset.script } : {}),
       ...(preset?.args ? { args: preset.args } : {}),
-      ...(preset?.url ? { url: preset.url } : {}),
+      ...(url.trim() ? { url: url.trim() } : {}),
       ...(preset?.goalId ? { goalId: preset.goalId } : {}),
       // Sent as its own field, not inside `args`: this one is allowed to
       // contain spaces, and the server pushes it as a separate argv entry.
@@ -172,7 +195,7 @@ export function RunPanel(props: {
       ...(presetKey ? { slide: presetKey } : {}),
     });
     props.onRunStarted();
-  }, [act, goal, mode, step, headed, paramValue, ownsGoal, preset, presetKey, props]);
+  }, [act, goal, url, mode, step, headed, paramValue, ownsGoal, preset, presetKey, props]);
 
   // A run waits on you in two places: the per-turn gate, and the hold that
   // keeps the finished browser on screen. Both end with a prompt and both are
@@ -188,7 +211,7 @@ export function RunPanel(props: {
     headed ? "--headed" : "",
     preset?.paramFlag && paramValue.trim() ? `${preset.paramFlag} "${paramValue.trim()}"` : "",
     ...(preset?.args ?? []),
-    preset?.url ? `--url ${preset.url}` : "",
+    url.trim() ? `--url ${url.trim()}` : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -226,17 +249,39 @@ export function RunPanel(props: {
             <code>tsx {command}</code>
           </p>
         ) : (
-          <label className="run-field">
-            <span>Goal</span>
-            <textarea
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              rows={3}
-              spellCheck={false}
-              disabled={state.running}
-              placeholder="What should the agent do on the page?"
-            />
-          </label>
+          <>
+            {/* The page is config, not something the model infers — the env
+                navigates here before the first observation. Editable for the
+                same reason the goal is: a question from the room is usually
+                "does it work on MY site?", and the answer should be a run. */}
+            <label className="run-field">
+              <span>Site</span>
+              <input
+                type="text"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                spellCheck={false}
+                disabled={state.running}
+                placeholder="the local shop page — no network"
+              />
+            </label>
+            {url.trim() !== "" && goal.trim() === DEFAULT_GOAL.trim() && (
+              <p className="run-hint">
+                The goal below is still the shop page's. A different site needs a different one.
+              </p>
+            )}
+            <label className="run-field">
+              <span>Goal</span>
+              <textarea
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                rows={3}
+                spellCheck={false}
+                disabled={state.running}
+                placeholder="What should the agent do on the page?"
+              />
+            </label>
+          </>
         )}
 
         <div className="run-row">

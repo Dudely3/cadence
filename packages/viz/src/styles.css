@@ -694,9 +694,26 @@ pre,
   line-height: 1.45;
   resize: vertical;
 }
-.run-field textarea:focus-visible {
+/* The single-line fields — Site, and the editable value a slide offers —
+   share the textarea's box so the panel reads as one form. */
+.run-field input[type="text"] {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--page);
+  color: var(--text-primary);
+  font: inherit;
+}
+.run-field textarea:focus-visible,
+.run-field input[type="text"]:focus-visible {
   outline: 2px solid var(--series-1);
   outline-offset: 1px;
+}
+.run-hint {
+  margin: -2px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 .run-row {
   display: flex;

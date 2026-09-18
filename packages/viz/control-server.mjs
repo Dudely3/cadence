@@ -86,8 +86,16 @@ function buildArgs(body) {
     args.push("--mode", "accuracy");
   }
 
+  // The start URL. It is typed in the run panel now, not only authored in a
+  // slide, so it gets the same treatment as the editable value below: the
+  // child is spawned without a shell and this is its own argv entry, so
+  // spaces are safe — but a flag-shaped value would be read as the NEXT flag
+  // and silently swallow its argument.
   const url = typeof body.url === "string" ? body.url.trim() : "";
-  if (url) args.push("--url", url);
+  // eslint-disable-next-line no-control-regex
+  if (url && url.length <= 300 && !url.startsWith("-") && !/[\u0000-\u001f]/.test(url)) {
+    args.push("--url", url);
+  }
 
   const goal = typeof body.goal === "string" ? body.goal.trim() : "";
   if (goal) {
