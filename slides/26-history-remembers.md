@@ -10,8 +10,9 @@ run.note: one Haiku run on the audit page — about four cents
 
 # History remembers. The state block doesn't.
 
-A task built so that carrying state forward is the only way through. Six
-returned units, and **none of them can be judged until all six are inspected.**
+**The run from the first slide, with the receipts.** A task built so that
+carrying state forward is the only way through. Six returned units, and
+**none of them can be judged until all six are inspected.**
 A unit's condition appears only in a detail pane that holds one unit and is
 overwritten by the next inspection.
 

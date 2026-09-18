@@ -1,20 +1,35 @@
 ---
-sessions: sess_mtyv39r1_1, sess_mtyv43le_4
+sessions: sess_mu2rtogv_3, sess_mu2rvrqs_4
 ---
 
-# Same goal. Same model. Same tools.
+# Nobody told it to do this
+
+Six returned units to inspect and judge. A unit's condition shows up in one
+detail pane, and the next inspection overwrites it — so nothing can be decided
+until everything has been seen, and by then most of it is gone from the page.
+
+**The cheap model, on the turn it had finally seen all six:**
 
 ```
-400 invalid_request_error
-prompt is too long:
-232396 tokens > 200000 maximum
+- RU-101: intact  → Restock
+- RU-102: damaged → Scrap
+- RU-103: damaged → Scrap
+- RU-104: intact  → Restock
+- RU-105: damaged → Scrap
+- RU-106: intact  → Restock
 ```
 
-That run could not send its third request.
+It wrote that into its own reasoning — because it had worked out that its
+reasoning is the part of the prompt that gets kept.
 
-The other one answered correctly, in a single turn, for a cent and a half.
+**The expensive model. Same page, same turn:**
 
-Nothing about the model changed. Only what we put in front of it.
+> My earlier notes were assumptions, not verified from state.
 
-> Both recordings are already open beside this slide. We come back to them in
-> twenty minutes and read every token of the difference.
+Then it inspected all six again. **13× the price for the same clean audit.**
+
+> **4,665,863 tokens · 458 model calls · $6.03.** I built six traps to catch
+> the cheap model out. Five of them caught nothing.
+>
+> Every number in this talk came out of a run in this repo, and you can check
+> all of them for free.
