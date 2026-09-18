@@ -305,7 +305,8 @@ export function App(): React.JSX.Element {
     }
   };
 
-  // ←/→ scrub turns (great on stage); v toggles the presentation view.
+  // ↑/↓ scrub turns (great on stage, and still work while the slide deck
+  // has claimed ←/→ for moving between slides); v toggles the presentation view.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       // Never steal keys from the goal box or any other text field.
@@ -320,7 +321,9 @@ export function App(): React.JSX.Element {
         setShowSessions(false);
         setShowRun(false);
         setShowSlides(false);
-      } else if (showSessions || showRun || showSlides) return; // a panel owns the arrows
+      } else if (e.key === "ArrowUp") pick(Math.max(0, selected - 1));
+      else if (e.key === "ArrowDown") pick(Math.min(latest, selected + 1));
+      else if (showSessions || showRun || showSlides) return; // a panel owns ←/→, v, and f
       else if (e.key === "ArrowLeft") pick(Math.max(0, selected - 1));
       else if (e.key === "ArrowRight") pick(Math.min(latest, selected + 1));
       else if (e.key === "v") setView((v) => (v === "anatomy" ? "blocks" : "anatomy"));
@@ -546,7 +549,7 @@ export function App(): React.JSX.Element {
             {session.mode === "replay"
               ? `turn ${selected} · replay — no model requests`
               : `request for turn ${selected}${pending ? " · about to be sent" : ""}`}
-            <span className="hint"> · ← → scrub turns · v for detail view</span>
+            <span className="hint"> · ↑ ↓ scrub turns · v for detail view</span>
           </div>
           {anatomy && <BlockMap anatomy={anatomy} />}
           <div className="present-legend">
@@ -590,8 +593,20 @@ export function App(): React.JSX.Element {
             <div key={b.id}>
               <BlockCard block={b} selected={b.id === blockId} onSelect={() => setBlockId(b.id)} />
               {i === anatomy.cacheLineAt && (
-                <div className="cache-line" title="cache_control breakpoint — the prefix above this line is frozen">
-                  ❄ cache line — everything above is frozen
+                <div
+                  className={`cache-line${anatomy.cacheLineDeclined ? " cache-line-declined" : ""}`}
+                  title={
+                    anatomy.cacheLineDeclined
+                      ? "cache_control was on the wire here, and the API cached nothing: a prefix under the model's minimum cacheable length (1,024 tokens; 4,096 on Haiku 4.5) is ignored, not an error"
+                      : "cache_control breakpoint — the prefix above this line is frozen"
+                  }
+                >
+                  {anatomy.cacheLineDeclined
+                    ? // The line was SENT. Saying "everything above is frozen"
+                      // over blocks this pane just painted fresh is the pane
+                      // contradicting itself; say what the invoice says instead.
+                      "❄ breakpoint sent — and ignored: the prefix is under the model's cache minimum"
+                    : "❄ cache line — everything above is frozen"}
                 </div>
               )}
             </div>

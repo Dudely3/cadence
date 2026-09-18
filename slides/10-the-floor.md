@@ -47,3 +47,6 @@ instead, as slide 8 does, and those tokens count toward clearing it.
 >
 > `npm run floor` measures any recording's prefix against the floor, and warns
 > when the margin is thin enough that one reworded sentence would drop it under.
+> The anatomy pane says it too, wherever it happened: the cache line turns amber
+> and reads *"breakpoint sent — and ignored"* rather than claiming a frozen
+> prefix. That is true of 48 turns across the recordings in this repo.

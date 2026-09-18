@@ -353,6 +353,12 @@ pre,
   padding: 4px 2px 10px;
   margin-top: 2px;
 }
+/* A breakpoint the API ignored. Cache-read blue would say the prefix froze;
+   it did not, and the line is a warning about the floor, not a cache boundary. */
+.cache-line-declined {
+  border-top-color: var(--status-warning);
+  color: var(--status-warning);
+}
 .usage-note {
   color: var(--text-secondary);
   font-size: 11px;

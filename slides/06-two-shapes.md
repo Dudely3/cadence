@@ -19,7 +19,9 @@ Both recordings are bound here. Open the chatbot and scrub turn 0 → 3.
   then chat, and nothing else.
 - **The request grows downward and nothing ever leaves.** By turn 3 it carries
   **three** sets of retrieved chunks. The cache is *fine* with that — it
-  appended — so turn 2 reads 2,610 tokens back and writes 1,620.
+  appended — so turn 3 reads 1,582 tokens back and writes only the 653 that
+  message 3 added. Turns 0 and 1 cache *nothing*: the prompt is under the
+  minimum, and the pane says so on the line itself. The floor slide, early.
 - **Click the turn-2 and turn-3 chunk blocks.** One says `[api-keys §2]` came
   back *again* with a different score and different neighbours: same fact, new
   bytes, new position, paid for twice. The other says the rotation chunk fell

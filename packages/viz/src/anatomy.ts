@@ -82,6 +82,17 @@ export interface RequestAnatomy {
   blocks: AnatomyBlock[];
   /** Index into `blocks` of the last breakpoint (the cache line). -1 if none. */
   cacheLineAt: number;
+  /**
+   * The request carried a breakpoint and the API honoured none of it — read 0,
+   * write 0, everything billed fresh. With cache_control actually on the wire
+   * that has one cause: the prefix is under the model's minimum cacheable
+   * length (1,024 tokens; 4,096 on Haiku 4.5), so the line is simply ignored.
+   *
+   * Worth its own flag because the caption over that line otherwise claims
+   * "everything above is frozen" across blocks the pane has just painted fresh
+   * — the exact contradiction the floor slide exists to explain.
+   */
+  cacheLineDeclined: boolean;
   /** What came back this turn: thought + tool calls, then their results. */
   response: AnatomyBlock[];
   /** True while the turn exists but hasn't closed (live, in flight). */
@@ -676,6 +687,10 @@ export function requestAnatomy(session: Session, turnIndex: number): RequestAnat
 
   const lastFrozen = blocks.findLastIndex((b) => b.region === "cached" || b.region === "cache-write");
   if (usage && lastFrozen >= 0) cacheLineAt = lastFrozen;
+  // Asked for above, honoured by nothing: the breakpoint is still drawn where
+  // the wire put it, but the caption over it has to stop claiming a frozen
+  // prefix. Only decidable with an invoice in hand.
+  const cacheLineDeclined = usage !== undefined && lastFrozen < 0 && cacheLineAt >= 0;
 
   const byRegion = (r: Region): AnatomyBlock[] => blocks.filter((b) => b.region === r);
   const audit: RegionAudit[] = [];
@@ -702,6 +717,7 @@ export function requestAnatomy(session: Session, turnIndex: number): RequestAnat
     turnIndex,
     blocks,
     cacheLineAt,
+    cacheLineDeclined,
     response,
     responsePending: !!turn && !turn.closed,
     resultsAreNextInput,

@@ -41,8 +41,8 @@
         ],
         "usage": {
           "model": "rag-pipeline (append-only chat + chunks)",
-          "inputTokens": 940,
-          "outputTokens": 42,
+          "inputTokens": 197,
+          "outputTokens": 40,
           "cacheReadTokens": 0,
           "cacheWriteTokens": 0
         },
@@ -76,10 +76,10 @@
         ],
         "usage": {
           "model": "rag-pipeline (append-only chat + chunks)",
-          "inputTokens": 6,
-          "outputTokens": 205,
+          "inputTokens": 892,
+          "outputTokens": 157,
           "cacheReadTokens": 0,
-          "cacheWriteTokens": 2610
+          "cacheWriteTokens": 0
         },
         "timing": {
           "startedMs": 1786909860000,
@@ -111,10 +111,10 @@
         ],
         "usage": {
           "model": "rag-pipeline (append-only chat + chunks)",
-          "inputTokens": 6,
-          "outputTokens": 187,
-          "cacheReadTokens": 2610,
-          "cacheWriteTokens": 1620
+          "inputTokens": 3,
+          "outputTokens": 132,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 1582
         },
         "timing": {
           "startedMs": 1786909950000,
@@ -135,10 +135,10 @@
         "toolResults": [],
         "usage": {
           "model": "rag-pipeline (append-only chat + chunks)",
-          "inputTokens": 6,
-          "outputTokens": 226,
-          "cacheReadTokens": 4230,
-          "cacheWriteTokens": 1410
+          "inputTokens": 3,
+          "outputTokens": 177,
+          "cacheReadTokens": 1582,
+          "cacheWriteTokens": 653
         },
         "timing": {
           "startedMs": 1786910020000,
@@ -157,10 +157,10 @@
     "totals": {
       "wallMs": 222600,
       "llmCalls": 4,
-      "inputTokens": 958,
-      "outputTokens": 660,
-      "cacheReadTokens": 6840,
-      "cacheWriteTokens": 5640
+      "inputTokens": 1095,
+      "outputTokens": 506,
+      "cacheReadTokens": 1582,
+      "cacheWriteTokens": 2235
     }
   }
 }
