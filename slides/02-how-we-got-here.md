@@ -17,6 +17,10 @@ The moment retrieval arrived, someone had to decide what goes in the prompt,
 in what order, and what gets dropped. That decision never went away — most
 teams just never made it deliberately.
 
-> **The thesis:** an agentic loop differs from a chatbot loop in *who owns the
-> context*. In an agent, the context is a constructed artifact — you decide
-> every byte, every turn.
+> **The thesis:** in an agent, the context is a constructed artifact — you
+> decide every byte, every turn. Which means most reliability problems are
+> *shape* problems, and **a second opinion is the expensive way to fix
+> something the shape already prevents.**
+>
+> That is not the talk I set out to give. It is the one the measurements kept
+> insisting on.

@@ -8,7 +8,7 @@ run.headed: false
 run.note: one speed run against the trap — about 10 seconds and a cent
 ---
 
-# What the extra money buys
+# Construction beats review
 
 A task built to catch the cheap mode out: add all ten Camping and Climbing
 items, then report the cart's total. Ten items trip a **$5 bundle discount that
@@ -23,8 +23,9 @@ wrong. Three runs of each mode:
 
 **It caught nobody** — because the cart total is re-observed into *every*
 request. There is no stale number on the prompt to be fooled by, so there is
-nothing for a critic to catch. Construction prevented the bug that review would
-have had to find.
+nothing for a critic to catch.
+
+**Construction prevented the bug that review would have had to find.**
 
 ## What actually moves the bill
 

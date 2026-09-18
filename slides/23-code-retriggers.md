@@ -22,3 +22,8 @@ the model, with a slightly different context each time, until a condition holds.
 > condition, you can add a model call — or refuse one. A critic is just "call
 > it again and ask if that was right." Be creative: the harness is where the
 > engineering lives.
+>
+> **And *refuse one* is the underrated half.** Every lever here spends a call
+> to check something. The same file decides what goes in the request in the
+> first place — and a fact rendered fresh every turn needs no second opinion
+> at all. Cheapest call in the harness is the one you designed away.

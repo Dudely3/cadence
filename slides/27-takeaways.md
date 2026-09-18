@@ -1,7 +1,14 @@
 # What to take home
 
-An agent's context is a **constructed artifact**. Every byte in it is a
-decision you made, on purpose or by accident.
+**Construction beats review.** If a fact is re-observable, building the prompt
+so it is always fresh costs nothing and prevents the bug. Paying a second model
+to check the first costs 8–13× and catches it *sometimes*. Buy review where the
+risk is in the **decision** — where the thing you need was never in the request
+at all.
+
+An agent's context is a **constructed artifact**: every byte a decision you
+made, on purpose or by accident. Everything below is how you build the prompt
+that makes that first paragraph true.
 
 ## Caching is a prefix match on bytes
 
@@ -27,8 +34,8 @@ decision you made, on purpose or by accident.
   recording replays on a page that moved; store the id and it replays once.
 - **Reliability is ordinary code deciding when to call the model again.**
   Anywhere you can write a condition, you can add a model call — or refuse one.
-- **Buy accuracy where the risk is in the decision.** If the fact is
-  re-observable, construction already prevented the bug review would catch.
+- **Buy accuracy where the risk is in the decision.** Re-observable facts are
+  construction's job. A hidden *path* is where a planner earns its money.
 
 > Every number in this talk came out of a run in this repo, and none of them
 > are typed into a slide by hand. Clone it and `npm run check` — free, no key,

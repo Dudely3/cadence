@@ -6,6 +6,9 @@ sessions: example-rag-chatbot.json
 
 ## Execution Modes for Agentic Workflows
 
+I built a harness to find out which one you should pay for. It kept giving me
+an answer I did not expect.
+
 **Addison Rennick** — Principal Developer
 Building agentic AI systems that automate real browser workflows at scale
 

@@ -1,5 +1,5 @@
 ---
-sessions: sess_mu2rtogv_3, sess_mu2rvrqs_4, sess_mu2ohlqd_4
+sessions: sess_mu2rtogv_3, sess_mu2rvrqs_4
 run.label: run the audit on speed
 run.script: examples/compare.ts
 run.args: --goals e --modes speed
@@ -53,15 +53,15 @@ Then it re-inspected all six. **13× the price for the same clean audit.**
 
 > Nobody told the cheap model to do that. It used the *shape* of the prompt —
 > history frozen, state volatile — as somewhere to put a fact it would need
-> later. That is slides 11 and 12 arriving from the other direction, chosen by
-> the model rather than designed by me.
+> later. That is **Put the volatile stuff past the line** and **Stable, not
+> identical** arriving from the other direction, chosen by the model rather
+> than designed by me.
 >
 > **Two honest caveats.** This page was redesigned until it had that property;
 > the first version let the model inspect and judge one unit at a time, and
 > tracking never mattered. And this is the fifth purpose-built trap in this
-> repo that failed to catch the cheap mode. The one that *did* separate them
-> hid the **path**, not the facts — accuracy 3/3, speed 1/8, at
-> `--goals c`.
+> repo that failed to catch the cheap mode. The only one that ever did is the
+> previous slide, and it hid the **path**, not the facts.
 >
 > So the honest answer to "what does accuracy buy?" is narrower than the
 > brochure: on work this size, sometimes it buys the model deciding not to
