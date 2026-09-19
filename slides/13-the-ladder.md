@@ -11,30 +11,23 @@ run.note: 4 live runs, roughly 25 cents and a few minutes — the per-rung slide
 # The context ladder
 
 Same goal. Same loop. Same page. Same model. Same tools. **Only the context
-strategy changes.** Every rung finished with the correct cart.
+strategy changes.** All four finish with the correct cart.
 
-| rung | turns | peak prompt | total | cost |
-| --- | --- | --- | --- | --- |
-| 1. naive | 3 | 97,024 | 199,084 | *$0.1346* |
-| 2. + volatile tail | 2 | 36,060 | 71,686 | $0.0714 |
-| 3. + cleaned page | 2 | 19,137 | 37,839 | $0.0312 |
-| 4. + let it explore | 3 | **10,295** | **27,277** | **$0.0216** |
+Four rungs, each one idea:
 
-**97,024 → 10,295 tokens in the biggest single request. 89% smaller.**
+- **1 — the obvious way.** Send the DOM, append every turn of it to history,
+  put the breakpoint at the end and cache the lot.
+- **2 — stop freezing state into history.** Re-observe it, and put it past the
+  cache line where it is replaced every turn.
+- **3 — drop the markup** the model was never reading.
+- **4 — stop shipping the page at all.** Send a small window of it and a tool
+  that searches the rest.
 
-Each rung is one idea:
+**Watch the biggest single request, not the bill.** Cost on a page this small
+comes down mostly to which run happened to take an extra turn. Peak prompt size
+does not move like that — and it is the number that decides whether the request
+can be sent at all, which is where this ends up.
 
-- **2** — stop freezing state into history; re-observe and put it past the
-  cache line, replaced every turn
-- **3** — drop the markup the model was never reading
-- **4** — stop shipping the page at all; send a small window and let the model
-  search for the rest
-
-**Read the turns column before the cost column.** Rungs 1 and 2 swap places
-depending on which one happens to take an extra turn — a coin toss, and the
-rung 2 slide has the token accounting that shows why. **3 and 4 beat both every time**,
-and that is the claim worth making.
-
-> `npm run ladder` runs all four and writes four traces — the four bound to
-> this slide. The next three slides walk the rungs, with each one's recording
+> `npm run ladder` runs all four and writes the four traces bound to this
+> slide. The next three slides walk the rungs, each with its own recording
 > already open beside it.

@@ -25,6 +25,19 @@ advance — which is what a person does with a long page.
 the prompt, what is left is mostly the stable prefix — so most of this run is
 paid for at a tenth of list price.
 
+## The climb, end to end
+
+| rung | peak prompt | total | cost |
+| --- | --- | --- | --- |
+| 1. naive | 97,024 | 199,084 | *$0.1346* |
+| 2. + volatile tail | 36,060 | 71,686 | $0.0714 |
+| 3. + cleaned page | 19,137 | 37,839 | $0.0312 |
+| 4. + let it explore | **10,295** | **27,277** | **$0.0216** |
+
+**97,024 → 10,295 in the biggest single request. 89% smaller**, same goal, same
+model, same tools, same correct cart. On a page this size that is a bill. On
+the next one it is the difference between running and not running.
+
 **The honest catch:** this rung is the one that gets things subtly wrong. It
 sees a window around a match, and a window can straddle two entries. On the
 real page it once reported the right session title with the *next* session's

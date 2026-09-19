@@ -21,8 +21,10 @@ Nothing here is stupid — every choice is the conservative one.
 | --- | --- | --- | --- |
 | 3 | 97,024 | 199,084 | $0.1346 |
 
+**97,024 tokens in the biggest request — and it roughly doubles every turn.**
+
 And it *works*. It ends with the right cart, and on a good day it is the
-cheapest rung on the board.
+cheapest rung on the board. Hold on to that; it is the whole trap.
 
 **Look at the request beside this slide.** Turn 1 carries the catalogue twice —
 as it was at turn 0, and as it is now. One of them is wrong. Both are sent.
