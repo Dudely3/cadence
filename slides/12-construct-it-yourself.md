@@ -54,3 +54,7 @@ continues with the wrong argument.
 > is a harness that must keep growing tolerance for every shape the model
 > invents, where each gap is a silent wrong answer rather than an error. That is
 > what the `tools` parameter buys: not reliability, **loudness**.
+>
+> **And that is everything you control.** The blocks, the cache line, the page,
+> even the protocol the tools travel in — every byte of it is yours to place.
+> The rest of this talk is about how much of it you should hand back.
