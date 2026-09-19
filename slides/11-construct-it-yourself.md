@@ -30,6 +30,7 @@ same tools.** Only the protocol differs.
 | tool schemas sent | 14 | **0** |
 | tool-use preamble | 317 tok | **0** |
 | system prompt | 14,533 ch | **17,374 ch** |
+| **prompt tokens sent** | 12,795 | **10,248** |
 | output | 344 | **681** |
 | **cost** | **$0.01098** | **$0.01105** |
 
@@ -40,8 +41,14 @@ dearer on one goal here, cheaper on the other.
 
 The tool descriptions move out of the `tools` parameter and into the system
 prompt, where they cache exactly as well, and the API's preamble is skipped
-entirely. It pays that back in **output**, because the model now writes the
-protocol itself.
+entirely.
+
+**So it sends 20% less and still costs a hair more.** The extra 2,841
+characters of prose are outweighed by the 317-token preamble and a thousand
+tokens of schemas that never go on the wire — the frozen prefix drops from
+5,521 tokens to 4,154. What eats the saving is **output**, because the model
+now writes the protocol itself, and output is about five times the price of
+cached input.
 
 **So where did the fragility go?** Not where the story says. In 48 calls the
 model never produced JSON we could not read. Every failure came from *fuzzing
