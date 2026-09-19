@@ -48,5 +48,5 @@ add an intermediate breakpoint around fifteen.
 > not what to read: turn 1 with the system line removed read 8,982 and wrote
 > zero, identical to keeping it. The entry lives until its TTL, marked or not.
 >
-> The tempting fix — merging turns into fewer blocks — is the wrong one. Three
-> slides on, there is a measurement of what it costs.
+> The tempting fix — merging turns into fewer blocks — is the wrong one. The
+> next slide measures what it costs.

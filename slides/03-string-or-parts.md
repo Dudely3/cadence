@@ -25,15 +25,11 @@ Every field that carries text takes either form. They are not equally capable.
 - Hold parts that are not text: `tool_use`, `tool_result`, images, documents.
 - Carry `cache_control` — a property **of a block**. There is also a
   *top-level* `cache_control` that will cache a string-shaped request for you,
-  so the honest version is narrower than "strings cannot cache": it picks the
-  boundary itself, always the last eligible block, walking backward in silence
-  if that one will not take it. **A string can be cached. It cannot be aimed.**
+  up to the last eligible block. **A string can be cached. It cannot be aimed.**
 
-Aiming is the whole talk. The line goes on the goal rather than the last system
-block, because the API appends its own text after yours. It moves forward every
-turn, because the lookback is twenty positions and a turn spends two. The page
-has to land on the far side of it, or the prefix changes every request. Not one
-of those is a choice you have until the prompt is a list of parts.
+The cache line goes on the goal rather than the last system
+block, because the API appends its own tool preamble after yours. It moves forward every
+turn. The page has to land on the far side of it, or the prefix changes every request. 
 
 > Cadence has no string form at all: `Message.content` is typed
 > `ContentBlock[]`, always — see `packages/core/src/types.ts`. The pane beside
