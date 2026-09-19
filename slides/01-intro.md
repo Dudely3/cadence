@@ -6,8 +6,8 @@ sessions: example-rag-chatbot.json
 
 ## Execution Modes for Agentic Workflows
 
-I built a harness to find out which one you should pay for, and six traps to
-catch the cheap one out. Five of them caught nothing.
+I built a harness to find out which one you should pay for, and five traps to
+catch the cheap one out. Not one of them worked.
 
 **Addison Rennick** — Principal Developer
 Building agentic AI systems that automate real browser workflows at scale

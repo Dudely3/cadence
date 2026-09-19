@@ -60,8 +60,9 @@ Then it re-inspected all six. **13× the price for the same clean audit.**
 > **Two honest caveats.** This page was redesigned until it had that property;
 > the first version let the model inspect and judge one unit at a time, and
 > tracking never mattered. And this is the fifth purpose-built trap in this
-> repo that failed to catch the cheap mode. The only one that ever did is the
-> previous slide, and it hid the **path**, not the facts.
+> repo that failed to catch the cheap mode — and none of the other four caught
+> it either. The previous slide is the only one that ever separated the modes,
+> and it did that by hiding the **path**, not by catching anyone out.
 >
 > So the honest answer to "what does accuracy buy?" is narrower than the
 > brochure: on work this size, sometimes it buys the model deciding not to
