@@ -1,8 +1,8 @@
 ---
-sessions: sess_mtyqcsi4_1, sess_mtzwj1jx_1
+sessions: sess_mu8mwrh4_1, sess_mu8mpk8w_1, sess_mu8mp8r9_1
 run.label: run the old protocol live
 run.script: examples/browse.ts
-run.args: --mode legacy
+run.args: --mode legacy-lean
 run.step: true
 run.headed: true
 run.viewport: 940x820
@@ -19,7 +19,7 @@ prose, ask for JSON back, parse it yourself.**
 // the system prompt, not a tools parameter
 "- click(elementId) — Click an element by id."
 // what comes back: text, and nothing else
-'{"reasoning": "…", "action": ["click(2)"]}'
+'{"action":["click(2)"]}'
 ```
 
 Both recordings beside this slide are the **same goal, same page, same model,
@@ -29,26 +29,51 @@ same tools.** Only the protocol differs.
 | --- | --- | --- |
 | tool schemas sent | 14 | **0** |
 | tool-use preamble | 317 tok | **0** |
-| system prompt | 14,533 ch | **17,374 ch** |
-| **prompt tokens sent** | 12,795 | **10,248** |
-| output | 344 | **681** |
-| **cost** | **$0.01098** | **$0.01105** |
+| prompt tokens sent | 12,789 | **9,963** |
+| output | 362 | **276** |
+| **cost** | $0.00471 | **$0.00396** |
 
-**It works, and it is not expensive.** Across **24 runs and 48 model calls**:
-24 completed, every cart correct, and **zero replies that failed to parse.**
-Cost lands within 25% of native in either direction depending on the task —
-dearer on one goal here, cheaper on the other.
+*Three runs each, every one warm-started, so the cache state matches and the
+only difference left is the protocol.*
+
+**It is not a compromise. It wins on all three.** Fewer prompt tokens, fewer
+output tokens, 16% cheaper — and **zero replies that failed to parse**, across
+24 runs and 48 model calls of the old schema plus every run of this one.
 
 The tool descriptions move out of the `tools` parameter and into the system
 prompt, where they cache exactly as well, and the API's preamble is skipped
 entirely.
 
-**So it sends 20% less and still costs a hair more.** The extra 2,841
-characters of prose are outweighed by the 317-token preamble and a thousand
-tokens of schemas that never go on the wire — the frozen prefix drops from
-5,521 tokens to 4,154. What eats the saving is **output**, because the model
-now writes the protocol itself, and output is about five times the price of
-cached input.
+## The schema costs more than the protocol
+
+That table is not what this comparison usually shows, and the reason is worth
+the slide. The schema these harnesses actually used asks for this, every turn,
+pretty-printed:
+
+```js
+{"current_state": {
+   "page_summary": "…",
+   "evaluation": "…",
+   "next_goal": "…"},
+ "reasoning": "…",
+ "action": ["click(2)"]}
+```
+
+Four fields restating a page **that is already in the prompt**, after the model
+has said the same thing in prose above them. Same goal, same page, same model,
+same three warm runs:
+
+| json-in-text schema | output | cost |
+| --- | --- | --- |
+| the old one, in full | 586 | $0.00573 |
+| prose, then `{"action":[…]}` | **276** | **$0.00396** |
+
+**The ceremony is 310 output tokens a run, and output bills at roughly five
+times cached input.** That one schema choice is the difference between the old
+protocol costing 22% *more* than native and 16% *less* — on the same protocol,
+the same parser, and the same positional binding.
+
+Everyone measures the protocol. The protocol was never the expensive part.
 
 **So where did the fragility go?** Not where the story says. In 48 calls the
 model never produced JSON we could not read. Every failure came from *fuzzing
