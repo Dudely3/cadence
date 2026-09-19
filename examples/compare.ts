@@ -63,9 +63,9 @@
  *      raising the cap 22 -> 40 did not move it. See GOAL_C.
  *
  *   D. THE FALSE SUMMIT — "file a return for the Chalk Bag from ORD-1067, and
- *      report the RMA number". Five steps that must be done in order, on
- *      examples/site/workflow.html rather than the shop, and after the third
- *      one the page shows a big green "Draft saved — DRAFT-7741" panel. Two
+ *      report the RMA number". Eleven steps that must be done in order, on
+ *      examples/site/workflow.html rather than the shop, and after the sixth
+ *      one the page shows a big green "Draft saved — DRAFT-7741" panel. Five
  *      steps remain below it. Nothing nags.
  *
  *      This goal exists because A, B and C could not produce the failure that
@@ -180,12 +180,19 @@ const MAX_STEPS_B = 18;
 const MAX_STEPS_C = 22;
 
 /**
- * Step cap for goal D. The floor is 6 turns (5 picks + complete) and accuracy
- * adds update_plan bookkeeping, so 14 is a bit over twice the floor — the same
- * headroom rule as B and C, which exists so a max_steps row means "stuck", not
- * "measured my own config".
+ * Step cap for goal D. It was 14, written against a five-step version of the
+ * page. The page has eleven gated steps now, so the floor is 16 turns measured
+ * — 3/3 speed runs land on 16 exactly — and a cap of 14 sat BELOW the floor.
+ * Every run hit it, and the table that came out measured this constant rather
+ * than either mode.
+ *
+ * 50 is roughly three times the floor, deliberately more headroom than the
+ * "twice" rule elsewhere in this file. A high cap costs money and buys
+ * certainty: a run that burns 50 turns on a 16-turn task is stuck, not slow,
+ * and there is nothing left to argue about. Same reasoning that took goal C
+ * from 22 to 40.
  */
-const MAX_STEPS_D = 14;
+const MAX_STEPS_D = 50;
 
 /**
  * Step cap for goal E. The floor is 14 turns one action at a time (6 inspects,
@@ -305,15 +312,15 @@ const GOAL_C: Goal = {
  * the goals. It is a property of the PAGE, and it is why none of them ever
  * caught a run declaring success early — there was nothing to be early about.
  *
- * examples/site/workflow.html is built to break exactly that. Five steps that
- * must be done in order, and after the third one a large green panel saying
- * "Draft saved" with a reference number, DRAFT-7741, which is what a finished
- * request looks like on most real sites. Two steps remain below it and nothing
- * nags. The run that stops there calls complete with a plausible reference and
+ * examples/site/workflow.html is built to break exactly that. Eleven steps
+ * that must be done in order, and after the sixth one a large green panel
+ * saying "Draft saved" with a reference number, DRAFT-7741, which is what a
+ * finished request looks like on most real sites. Five steps remain below it
+ * and nothing nags. The run that stops there calls complete with a plausible reference and
  * scores `completed` with the world in the wrong state.
  *
- * The page does not cheat: the header still reads "Return request (3/4
- * chosen)" at the summit, so the truth is in the state block. It is just not
+ * The page does not cheat: the header still reads "step 7 of 12" at the
+ * summit, so the truth is in the state block. It is just not
  * the loud thing in it. A trap that hid the information would prove nothing
  * about a model's judgement.
  *
@@ -321,7 +328,28 @@ const GOAL_C: Goal = {
  * here that puts all three of its mechanisms in play at once: the planner has
  * to enumerate five ordered steps, update_plan's gate has to refuse "submit"
  * while "resolution" is pending, and the critic has to be willing to say that
- * a draft reference is not an RMA. NOT YET MEASURED.
+ * a draft reference is not an RMA.
+ *
+ * MEASURED (2026-09-19, 3 runs each, cap raised 14 -> 50):
+ *
+ *   speed     3/3 filed RMA-48213   16, 16, 16 turns   $0.0370 each
+ *   accuracy  3/3 filed RMA-48213   18, 19, 20 turns   $0.5777 each
+ *
+ * ZERO premature completions on either side. This is the fifth trap, and the
+ * one built for the failure that matters most in production, and it caught
+ * nobody. Not one run called complete on DRAFT-7741.
+ *
+ * Accuracy cost 15.6x and took MORE turns. The planner enumerates the eleven
+ * steps up front and update_plan books each one, which is bookkeeping on a
+ * task whose ordering the page already enforces: every pick is gated, and an
+ * out-of-order choice is refused with "Choose X first". The dependency the
+ * planner exists to track is the one thing that could not go wrong.
+ *
+ * The honest history of this goal is two void attempts before a clean
+ * negative. The first (2026-09-15) was void because the goal wording named
+ * the trap. The second was void for a duller reason: MAX_STEPS_D was 14
+ * against a 16-turn floor, so all six runs hit the cap and the table measured
+ * the constant rather than either mode.
  */
 const GOAL_D: Goal = {
   id: "compare-false-summit",
@@ -710,7 +738,7 @@ if (GOALS.includes("d")) {
     `\n════════ D. the false summit — did it stop at the draft? (${RUNS} runs each) ════════`,
   );
   console.log(
-    `  the page hands out ${DRAFT_REF} three steps in; the real one is ${RMA_NUMBER}\n`,
+    `  the page hands out ${DRAFT_REF} six steps in; the real one is ${RMA_NUMBER}\n`,
   );
   for (const mode of MODES) {
     for (let i = 0; i < RUNS; i++) {
