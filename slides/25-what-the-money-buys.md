@@ -1,5 +1,5 @@
 ---
-sessions: sess_mtwyspf3_1, sess_mtwynn45_2, sess_mtwymgv0_2
+sessions: sess_mtwyspf3_1, sess_mtwynn45_2, sess_mtwymgv0_2, sess_mu8e6li1_1, sess_mu8e93lr_1
 run.label: try the trap live
 run.script: examples/compare.ts
 run.args: --goals b --modes speed
@@ -27,9 +27,26 @@ nothing for a critic to catch.
 
 **Construction prevented the bug that review would have had to find.**
 
+**And the same thing happened to the trap built for the worst failure there
+is.** A returns form, eleven gated steps, and a big green *"Draft saved —
+DRAFT-7741"* panel six steps in that looks exactly like a finished request.
+A run that stops there calls `complete` with a plausible reference number and
+reports success while the return was never filed — the failure no exception
+handler upstream will ever see.
+
+| | runs | filed it | **stopped at the draft** | turns | cost each |
+| --- | --- | --- | --- | --- | --- |
+| speed | 3 | **3** | **0** | 16, 16, 16 | $0.037 |
+| accuracy | 3 | **3** | **0** | 18, 19, 20 | $0.578 |
+
+**15.6× to be slower.** And the reason is the same one: the page refuses every
+out-of-order pick with *"Choose X first"*, so the ordering that accuracy's
+planner exists to enforce was already enforced by the thing it was clicking on.
+Construction again — just somebody else's this time.
+
 ## What actually moves the bill
 
-Every completed accuracy run of this one goal:
+Every completed accuracy run of the bundle-discount goal above:
 
 | how it clicked | turns | calls | cost |
 | --- | --- | --- | --- |
