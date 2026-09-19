@@ -27,9 +27,8 @@ Every field that carries text takes either form. They are not equally capable.
   *top-level* `cache_control` that will cache a string-shaped request for you,
   up to the last eligible block. **A string can be cached. It cannot be aimed.**
 
-The cache line goes on the goal rather than the last system
-block, because the API appends its own tool preamble after yours. It moves forward every
-turn. The page has to land on the far side of it, or the prefix changes every request. 
+Where that line goes is two slides away. What matters here is that only a
+block can carry one.
 
 > Cadence has no string form at all: `Message.content` is typed
 > `ContentBlock[]`, always — see `packages/core/src/types.ts`. The pane beside

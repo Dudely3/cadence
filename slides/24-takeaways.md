@@ -2,7 +2,7 @@
 
 **Construction beats review.** If a fact is re-observable, building the prompt
 so it is always fresh costs nothing and prevents the bug. Paying a second model
-to check the first costs 8–13× and catches it *sometimes*. Buy review where the
+to check the first costs 9–16× and catches it *sometimes*. Buy review where the
 risk is in the **decision** — where the thing you need was never in the request
 at all.
 
@@ -37,12 +37,12 @@ that makes that first paragraph true.
 - **Buy accuracy where the risk is in the decision.** Re-observable facts are
   construction's job. A hidden *path* is where a planner earns its money.
 
-> **4,665,863 tokens · 458 model calls · $6.03.** That is every recording in
-> this repo, at list prices — the whole evidence base for the last forty
-> minutes, for the price of a sandwich.
+> **5,815,730 tokens · 642 model calls · $7.94.** That is every recording
+> committed to this repo, at list prices — the whole evidence base for the last
+> forty minutes, for the price of a sandwich.
 >
-> Every number in this talk came out of a run in this repo, and none of them
-> are typed into a slide by hand. Clone it and `npm run check` — free, no key,
+> Every number in this talk came off a run whose trace is in `traces/`, and the
+> checks that keep them honest are free: clone it and `npm run check` — no key,
 > no network.
 >
 > **github.com/Dudely3/cadence** · Addison Rennick
