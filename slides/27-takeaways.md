@@ -37,6 +37,10 @@ that makes that first paragraph true.
 - **Buy accuracy where the risk is in the decision.** Re-observable facts are
   construction's job. A hidden *path* is where a planner earns its money.
 
+> **4,665,863 tokens · 458 model calls · $6.03.** That is every recording in
+> this repo, at list prices — the whole evidence base for the last forty
+> minutes, for the price of a sandwich.
+>
 > Every number in this talk came out of a run in this repo, and none of them
 > are typed into a slide by hand. Clone it and `npm run check` — free, no key,
 > no network.
