@@ -2,7 +2,7 @@
 sessions: sess_mu8mwrh4_1, sess_mu8mpk8w_1
 run.label: run hand-rolled JSON live
 run.script: examples/browse.ts
-run.args: --mode legacy-lean
+run.args: --mode legacy
 run.step: true
 run.headed: true
 run.viewport: 940x820

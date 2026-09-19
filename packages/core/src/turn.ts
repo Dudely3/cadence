@@ -125,8 +125,10 @@ export interface ContextShape {
 
   /**
    * Which json-in-text SCHEMA the model was asked for. Only meaningful when
-   * toolProtocol is "json-in-text"; undefined means "verbose", so every
-   * recording made before this field existed renders unchanged.
+   * toolProtocol is "json-in-text". Undefined means "verbose": every
+   * recording captured before this field existed used that shape, so they
+   * render unchanged. Live runs set it explicitly, and legacyMode now
+   * defaults to "lean".
    *
    * "verbose" is what the old harnesses actually used — current_state with
    * page_summary/evaluation/next_goal, plus reasoning, pretty-printed. It is

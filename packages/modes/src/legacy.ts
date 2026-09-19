@@ -26,9 +26,11 @@ export interface LegacyModeOptions {
    */
   repairAttempts?: number;
   /**
-   * Which catalogue to ask for. "verbose" (the default) is the historical
-   * shape; "lean" drops current_state and reasoning and asks for minified
-   * JSON. See ContextShape.legacySchema for why the difference matters.
+   * Which catalogue to ask for. "lean" is the default: prose thinking, then
+   * one minified {"action":[...]}. "verbose" is the historical shape, with
+   * current_state and reasoning restating a page the model can already see —
+   * kept runnable because it is the artifact, but it is not what this
+   * protocol has to cost. See ContextShape.legacySchema.
    */
   schema?: LegacySchema;
 }
@@ -60,10 +62,10 @@ export function legacyMode(opts: LegacyModeOptions = {}): ExecutionMode {
   const model = opts.model ?? "claude-haiku-4-5";
   const maxTokens = opts.maxTokens ?? 2048;
   const repairAttempts = opts.repairAttempts ?? 1;
-  const schema: LegacySchema = opts.schema ?? "verbose";
+  const schema: LegacySchema = opts.schema ?? "lean";
 
   return {
-    name: schema === "lean" ? "legacy-lean" : "legacy",
+    name: schema === "verbose" ? "legacy-verbose" : "legacy",
     maxSteps: opts.maxSteps ?? 8,
 
     // The shape is DATA on the session so buildMessages and the viewer both

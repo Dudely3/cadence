@@ -19,8 +19,8 @@
  * the script silently runs with defaults.
  *
  *   npx tsx examples/browse.ts --step --headed --viewport 940x820 --mode accuracy
- *   npx tsx examples/browse.ts --mode legacy      (json-in-text tool calls)
- *   npx tsx examples/browse.ts --mode legacy-lean (same, minified action only)
+ *   npx tsx examples/browse.ts --mode legacy         (json-in-text tool calls)
+ *   npx tsx examples/browse.ts --mode legacy-verbose (the old four-field schema)
  *   npx tsx examples/browse.ts --replay sess_xxxx      # id, path, latest, or pinned
  *   npx tsx examples/browse.ts --url prairiedevcon.com --goal "..."   # any site
  *
@@ -110,10 +110,11 @@ async function main(): Promise<void> {
           // how a call gets from the model to the harness changes.
           opts.mode === "legacy"
           ? legacyMode()
-          : // Same protocol, a schema that stops asking the model to restate
-            // the page it can already see. The difference is all in output.
-            opts.mode === "legacy-lean"
-            ? legacyMode({ schema: "lean" })
+          : // The historical schema, kept runnable. It asks the model to
+            // restate the page in current_state and reasoning, which is
+            // 310 output tokens a run and buys nothing.
+            opts.mode === "legacy-verbose"
+            ? legacyMode({ schema: "verbose" })
             : speedMode();
   }
   if (opts.step) {
