@@ -10,11 +10,16 @@ prompt:
 - **How much of it?** All of it, a window of it, or a tool that fetches more.
 - **What gets kept?** A turn's outcome freezes into history forever. Current
   state is replaced. Choosing which is which is the whole of the last act.
-- **Do we go around again?** "There were tool calls" is a plain `if`.
+- **Do we go around again?** Trick question. The loop is a bounded `for`, so
+  going around is the *default* — what you write are the `if`s that break out.
+- **So how does it end?** Three ways, and each is a different outcome: the
+  model called no tools at all (`stopped`), an action signalled done
+  (`completed`), or the cap ran out (`max_steps`). **Only the middle one is
+  success** — a model that stopped talking has not achieved anything.
 - **Do we check the answer?** A critic is just *call it again and ask whether
   that was right.*
-- **When do we stop?** A step cap and a failure budget are two more `if`s, and
-  running out of turns is a distinct outcome, not a success.
+- **Do we cut our losses?** A failure budget steers toward `complete(failed)`
+  rather than flailing until the cap does it for you.
 
 None of that is the model being clever. It is a program choosing to re-trigger
 the model, with a slightly different context each time, until a condition
