@@ -2,7 +2,7 @@
 sessions: sess_mtyqcsi4_1
 ---
 
-# A string, or a list of parts
+# A string, or a list of blocks
 
 Every field that carries text takes either form. They are not equally capable.
 
@@ -20,9 +20,9 @@ Every field that carries text takes either form. They are not equally capable.
 
 **What only the list can do**
 
-- Hold **more than one part** — assembled from different places, in an order
-  you control, and diffable one part at a time.
-- Hold parts that are not text: `tool_use`, `tool_result`, images, documents.
+- Hold **more than one block** — assembled from different places, in an order
+  you control, and diffable one block at a time.
+- Hold blocks that are not text: `tool_use`, `tool_result`, images, documents.
 - Carry `cache_control` — a property **of a block**. There is also a
   *top-level* `cache_control` that will cache a string-shaped request for you,
   up to the last eligible block. **A string can be cached. It cannot be aimed.**
