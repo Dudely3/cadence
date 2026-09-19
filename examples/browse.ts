@@ -20,6 +20,7 @@
  *
  *   npx tsx examples/browse.ts --step --headed --viewport 940x820 --mode accuracy
  *   npx tsx examples/browse.ts --mode legacy      (json-in-text tool calls)
+ *   npx tsx examples/browse.ts --mode legacy-lean (same, minified action only)
  *   npx tsx examples/browse.ts --replay sess_xxxx      # id, path, latest, or pinned
  *   npx tsx examples/browse.ts --url prairiedevcon.com --goal "..."   # any site
  *
@@ -109,7 +110,11 @@ async function main(): Promise<void> {
           // how a call gets from the model to the harness changes.
           opts.mode === "legacy"
           ? legacyMode()
-          : speedMode();
+          : // Same protocol, a schema that stops asking the model to restate
+            // the page it can already see. The difference is all in output.
+            opts.mode === "legacy-lean"
+            ? legacyMode({ schema: "lean" })
+            : speedMode();
   }
   if (opts.step) {
     mode = stepped(mode);

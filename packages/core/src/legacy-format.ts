@@ -54,8 +54,33 @@ function paramNames(def: ToolDef): string[] {
  * genuinely saves that and pays for this instead. Which is bigger is a
  * measurement, not an assumption.
  */
-export function renderToolCatalogue(tools: ToolDef[]): string {
+export type LegacySchema = "verbose" | "lean";
+
+export function renderToolCatalogue(
+  tools: ToolDef[],
+  schema: LegacySchema = "verbose",
+): string {
   const lines = tools.map((t) => `- ${t.name}(${paramNames(t).join(", ")}) — ${t.description}`);
+  if (schema === "lean") {
+    // Same protocol, a fraction of the output. The verbose schema below
+    // asks the model to restate the page and its reasoning in structured
+    // fields AFTER it has already said both in prose — and output bills at
+    // roughly five times cached input, so the ceremony is the expensive
+    // part, not the protocol.
+    return [
+      "Think in prose first, then end your reply with ONE minified JSON",
+      "object and nothing after it:",
+      '{"action":["toolName(args)"]}',
+      "",
+      "Available tools (call by writing the string into the action array):",
+      ...lines,
+      "",
+      "Arguments are POSITIONAL and JSON-encoded: strings quoted, numbers bare.",
+      "Do not pretty-print the JSON, and do not restate the page or your",
+      "reasoning inside it — the prose above it is where thinking goes.",
+      "Invalid JSON aborts the turn.",
+    ].join("\n");
+  }
   return [
     "You MUST respond with a single valid JSON object and NOTHING else — no",
     "prose, no markdown fences. The required format is:",

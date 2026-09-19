@@ -4,6 +4,7 @@ import {
   parseLegacyReply,
   renderStateTail,
   renderToolCatalogue,
+  type LegacySchema,
 } from "@cadence/core";
 import type {
   ContentBlock,
@@ -24,6 +25,12 @@ export interface LegacyModeOptions {
    * unfair, because a single stray character would end an otherwise fine run.
    */
   repairAttempts?: number;
+  /**
+   * Which catalogue to ask for. "verbose" (the default) is the historical
+   * shape; "lean" drops current_state and reasoning and asks for minified
+   * JSON. See ContextShape.legacySchema for why the difference matters.
+   */
+  schema?: LegacySchema;
 }
 
 const SCRATCH_CATALOGUE = "legacy.catalogue";
@@ -53,17 +60,22 @@ export function legacyMode(opts: LegacyModeOptions = {}): ExecutionMode {
   const model = opts.model ?? "claude-haiku-4-5";
   const maxTokens = opts.maxTokens ?? 2048;
   const repairAttempts = opts.repairAttempts ?? 1;
+  const schema: LegacySchema = opts.schema ?? "verbose";
 
   return {
-    name: "legacy",
+    name: schema === "lean" ? "legacy-lean" : "legacy",
     maxSteps: opts.maxSteps ?? 8,
 
     // The shape is DATA on the session so buildMessages and the viewer both
     // read it, exactly as naiveMode does. Merge rather than assign: the loop
     // stamps goalCache on every new session.
     prepare: ({ session, tools, ctx }) => {
-      session.contextShape = { ...session.contextShape, toolProtocol: "json-in-text" };
-      ctx.scratch[SCRATCH_CATALOGUE] = renderToolCatalogue(tools.toModelSchema());
+      session.contextShape = {
+        ...session.contextShape,
+        toolProtocol: "json-in-text",
+        legacySchema: schema,
+      };
+      ctx.scratch[SCRATCH_CATALOGUE] = renderToolCatalogue(tools.toModelSchema(), schema);
       ctx.scratch[SCRATCH_PARSE_FAILURES] = 0;
       ctx.scratch[SCRATCH_REPAIRS] = 0;
       return Promise.resolve();

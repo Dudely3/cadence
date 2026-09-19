@@ -189,7 +189,26 @@ const catalogue = renderToolCatalogue(tools);
 check(catalogue.includes("append_line(line)"), "the catalogue names each tool and its parameters");
 check(!catalogue.includes("inputSchema"), "the catalogue is prose, not a JSON schema dump");
 
-console.log(`\ncatalogue: ${catalogue.length} chars of prose in the system prompt`);
+// --- 7. the lean schema asks for less, and still parses ------------------
+const lean = renderToolCatalogue(tools, "lean");
+check(lean.includes("append_line(line)"), "the lean catalogue still names every tool");
+check(!lean.includes("current_state"), "the lean catalogue does not ask for current_state");
+check(!lean.includes("reasoning inside") || !lean.includes("\"reasoning\""), "the lean catalogue does not ask for a reasoning field");
+check(lean.length < catalogue.length, "the lean catalogue is the shorter of the two");
+
+// A lean reply: prose, then one minified object carrying nothing but the call.
+const leanReply = parseLegacyReply(
+  'Both lines still need writing.\n{"action":["append_line(\'alpha\')"]}',
+  tools,
+);
+check(leanReply.error === undefined, "a lean reply parses");
+check(leanReply.calls[0]?.name === "append_line", "a lean reply binds its call");
+check(leanReply.thought === "", "a lean reply carries no restated state");
+
+console.log(
+  `\ncatalogue: ${catalogue.length} chars verbose, ${lean.length} chars lean` +
+    ` \u2014 both live in the system prompt, inside the cached prefix`,
+);
 if (problems.length > 0) {
   console.error(`\n${problems.length} problem(s)`);
   process.exit(1);

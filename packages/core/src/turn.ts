@@ -122,6 +122,24 @@ export interface ContextShape {
    * before this existed renders any differently.
    */
   toolProtocol?: "native" | "json-in-text";
+
+  /**
+   * Which json-in-text SCHEMA the model was asked for. Only meaningful when
+   * toolProtocol is "json-in-text"; undefined means "verbose", so every
+   * recording made before this field existed renders unchanged.
+   *
+   * "verbose" is what the old harnesses actually used — current_state with
+   * page_summary/evaluation/next_goal, plus reasoning, pretty-printed. It is
+   * kept because it is the historical artifact, and because the first
+   * measurement of this protocol was taken against it.
+   *
+   * "lean" asks for prose thinking followed by one minified {"action":[...]}
+   * and nothing after it. The difference is not the protocol, it is the
+   * CEREMONY: the verbose schema makes the model restate a page already in
+   * its prompt, and output bills at roughly five times cached input. Which
+   * schema you ask for costs more than which protocol you pick.
+   */
+  legacySchema?: "verbose" | "lean";
 }
 
 /**
