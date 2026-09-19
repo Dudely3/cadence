@@ -36,8 +36,8 @@ talk is about whether your risk is the kind that pays for it.
 
 Three turns of work, six model calls. Against the speed run of the same task,
 also bound to this slide, that is **14× the cost** — $0.0943 against $0.0068.
-The requests column shows where it goes, call by call, and the comparison two
-slides on puts all three modes side by side.
+The requests column shows where it goes, call by call, and the next slide puts
+all three modes side by side.
 
 > Note which bullet did the work when this mode finally won. It was the
 > **planner**, not the critic — decomposition bought before turn 0, not a

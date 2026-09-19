@@ -46,4 +46,4 @@ likes. The cache is doing its job perfectly. The problem is what you put in it.
 
 > The tell is never an error. It is a run that works, gets bigger every turn,
 > and occasionally acts on a stale snapshot because it had two to choose from.
-> It works until the page is real — four slides from here.
+> It works until the page is real — three slides from here.

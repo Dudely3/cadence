@@ -23,10 +23,20 @@ the biggest request**, with nothing summarised and nothing hidden. The page is
 still there in full. It just isn't there twice.
 
 **And look what it did to the price of a token.** 60,936 billed fresh, against
-rung 1's nine. Moving the page past the cache line is the correct decision, and
-it moved the page from 0.1x to 1.0x. Two true things collided there, and a
-slide that showed only one of them would be selling you something — the
-accounting is two slides on.
+rung 1's **nine**. Moving the page past the cache line is the correct decision,
+and it moved the page from 0.1x to 1.0x. Two true things collided there, and a
+slide that showed only one of them would be selling you something.
+
+| rung | fresh (1x) | cache read (0.1x) | cache **write** (1.25x) |
+| --- | --- | --- | --- |
+| 1. naive | **9** | 102,054 | **97,021** |
+| 2. + volatile tail | **60,936** | 5,170 | 5,580 |
+| 3. + cleaned page | 27,088 | 10,340 | 411 |
+
+Rung 1 pays full price for nine tokens and 1.25x on ninety-seven thousand. An
+append-only prompt caches beautifully and *freezes everything it ever saw*.
+**You take rung 2's trade anyway, because rung 1's peak doubles every turn** —
+and a cache discount on an unbounded prompt is still an unbounded prompt.
 
 **Rung 3 — tags, classes, wrappers, inline styles, script and style bodies.**
 The model was never reading any of it. Headings become `#`, adjacent duplicates

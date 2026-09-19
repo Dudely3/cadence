@@ -31,8 +31,8 @@ Each rung is one idea:
   search for the rest
 
 **Read the turns column before the cost column.** Rungs 1 and 2 swap places
-depending on which one happens to take an extra turn — a coin toss, and four
-slides on there is a table that shows why. **3 and 4 beat both every time**,
+depending on which one happens to take an extra turn — a coin toss, and the
+rung 2 slide has the token accounting that shows why. **3 and 4 beat both every time**,
 and that is the claim worth making.
 
 > `npm run ladder` runs all four and writes four traces — the four bound to
