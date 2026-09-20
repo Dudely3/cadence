@@ -350,11 +350,10 @@ Session ids say nothing on their own, so there are two ways to see what you have
 In the visualizer, press **s** (or click **☰ sessions**) for the session overview: every
 trace with its goal, mode, outcome, what it did, and what it cost. Click one to open it.
 
-Two of those recordings are **hand-written**, not captured — `example-rag-chatbot.json` and
+Two of those recordings are **hand-written**, not captured — `example-chatbot.json` and
 `example-solo-legacy.json` exist so another architecture can be put beside a real run. A
 Turn is shaped for an agent loop (the assistant acts, then results come back), and a
-chatbot's turn boundary falls elsewhere (a user message plus its retrieval goes in, an
-answer comes out). Rather than distort the drawing, those traces set
+chatbot's turn boundary falls elsewhere (a user message goes in, an answer comes out). Rather than distort the drawing, those traces set
 `session.presentation` — `hideGoal` for "a chat's prompt is system → chat and nothing
 else", and `resultsAreNextInput` for "the user-side blocks on this turn are the NEXT
 request's input". Without the second flag the viewer drew the next user message under

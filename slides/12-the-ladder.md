@@ -1,5 +1,5 @@
 ---
-sessions: sess_mtyus7an_1, sess_mtyushk9_2, sess_mtyusqcl_3, sess_mtyusy0t_4
+sessions: sess_mtyus7an_1, sess_mtyushk9_2, sess_mtyusqcl_3, sess_mtyusy0t_4, sess_mtyv39r1_1, sess_mtyv3kwm_2, sess_mtyv3tns_3, sess_mtyv43le_4
 run.label: run the whole ladder
 run.script: examples/ladder.ts
 run.args: --scenario shop
@@ -23,11 +23,14 @@ Four rungs, each one idea:
 - **4 — stop shipping the page at all.** Send a small window of it and a tool
   that searches the rest.
 
-**Watch the biggest single request, not the bill.** Cost on a page this small
-comes down mostly to which run happened to take an extra turn. Peak prompt size
-does not move like that — and it is the number that decides whether the request
-can be sent at all, which is where this ends up.
+Every rung runs twice: once on a **local shop page** I built, and once on
+**prairiedevcon.com** — 76K tokens of real DOM that nobody designed for a demo.
 
-> `npm run ladder` runs all four and writes the four traces bound to this
-> slide. The next three slides walk the rungs, each with its own recording
-> already open beside it.
+**Watch the biggest single request, not the bill.** Cost on a small page comes
+down mostly to which run happened to take an extra turn. Peak prompt size does
+not move like that — and on the real page it is the number that decides whether
+the request can be sent at all.
+
+> `npm run ladder` runs all four on either scenario and writes the traces
+> bound to this slide. The next four slides take one rung each, with both of
+> its recordings already open.

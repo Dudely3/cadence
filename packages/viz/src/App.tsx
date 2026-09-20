@@ -88,6 +88,9 @@ export function App(): React.JSX.Element {
   const [view, setView] = useState<"anatomy" | "blocks">("anatomy");
   const [showSessions, setShowSessions] = useState(false);
   const [showRun, setShowRun] = useState(false);
+  // Which of the slide’s runs the panel is presetting — a rung slide offers the
+  // local shop page and the real site, and the button you pressed decides.
+  const [runIndex, setRunIndex] = useState(0);
   // The deck is up from the first paint. Opening on a bare anatomy pane asks a
   // first-time reader to work out what they are looking at from the picture
   // alone; slide 1 names the recording it wants beside it, so the page can
@@ -506,7 +509,14 @@ export function App(): React.JSX.Element {
               }}
               linked={linked}
               onToggleLink={toggleLink}
-              onRun={slideDef?.run ? () => setShowRun(true) : undefined}
+              onRun={
+                slideDef && slideDef.runs.length > 0
+                  ? (i) => {
+                      setRunIndex(i);
+                      setShowRun(true);
+                    }
+                  : undefined
+              }
             />
           )}
           {showSlides && (
@@ -519,7 +529,7 @@ export function App(): React.JSX.Element {
               // The preset follows the visible slide, so "run" on the slide
               // about rung 3 runs rung 3 — and nothing at all when the deck
               // is closed, which is the plain panel it has always been.
-              preset={showSlides ? slideDef?.run : undefined}
+              preset={showSlides ? slideDef?.runs[runIndex] : undefined}
               presetKey={showSlides ? slideDef?.name : undefined}
               presetTitle={showSlides ? slideDef?.title : undefined}
               // The server pins a run's recordings to the slide it was

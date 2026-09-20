@@ -150,7 +150,7 @@ for (const [i, name] of files.entries()) {
 
   const bits: string[] = [];
   if (slide.sessions.length > 0) bits.push(`${slide.sessions.length} session(s)`);
-  if (slide.run) bits.push("run");
+  if (slide.runs.length > 0) bits.push(slide.runs.length === 1 ? "run" : `${slide.runs.length} runs`);
   console.log(
     `${String(i + 1).padStart(2)}. ${slide.title}${bits.length ? `  [${bits.join(", ")}]` : ""}`,
   );
@@ -194,9 +194,9 @@ for (const [i, name] of files.entries()) {
     console.log(`      ${d.ok ? "·" : "✕"} ${d.text}`);
     if (!d.ok) problems.push(`${name}: ${d.text}`);
   }
-  if (slide.run) {
+  for (const run of slide.runs) {
     runnable++;
-    checkRun(name, slide.run);
+    checkRun(name, run);
     console.log(notes[notes.length - 1]);
   }
 }

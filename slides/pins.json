@@ -1,14 +1,18 @@
 {
-  "14-rung-1-naive.md": [
-    "sess_mtri76mu_1.json"
+  "13-rung-1-naive.md": [
+    "sess_mtri76mu_1.json",
+    "sess_mu8ir2bf_1.json"
   ],
-  "24-takeaways.md": [
-    "sess_mu6xn1nl_1.json"
+  "14-rung-2-tail.md": [
+    "sess_mu8ircw9_2.json"
   ],
-  "17-ladder-real-page.md": [
-    "sess_mu8ir2bf_1.json",
-    "sess_mu8ircw9_2.json",
-    "sess_mu8irunz_3.json",
+  "15-rung-3-cleaned.md": [
+    "sess_mu8irunz_3.json"
+  ],
+  "16-rung-4-explore.md": [
     "sess_mu8is47w_4.json"
+  ],
+  "23-takeaways.md": [
+    "sess_mu6xn1nl_1.json"
   ]
 }

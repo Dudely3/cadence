@@ -157,7 +157,7 @@ the picture still matches the wire.
   comparison can be measured rather than asserted. Its positional argument
   binding and paraphrased history are faithful, not sloppy — see
   `packages/core/src/legacy-format.ts`.
-- `traces/example-rag-chatbot.json` and `example-solo-legacy.json` are
+- `traces/example-chatbot.json` and `example-solo-legacy.json` are
   hand-written, not captured. They exist so another architecture can be put
   beside a real run, and they set `session.presentation` to say which drawing
   convention they use. Live runs never set it.

@@ -1,5 +1,5 @@
 ---
-sessions: example-rag-chatbot.json
+sessions: example-chatbot.json
 ---
 
 # Speed vs. Accuracy

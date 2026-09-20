@@ -93,17 +93,24 @@ export function traceFileName(raw: string): string {
   return t.endsWith(".json") ? t : `${t}.json`;
 }
 
-/** Frontmatter's `run.*` keys → a SlideRun, or nothing if it has none. */
+/**
+ * Frontmatter's `<prefix>.*` keys → a SlideRun, or nothing if it has none.
+ *
+ * A slide may declare more than one: `run.*` and `run2.*`. The ladder uses
+ * both, so one rung slide can launch itself against the local shop page or
+ * against the real site without a separate slide for each scenario.
+ */
 export function readRun(
   meta: Map<string, string>,
   warn: (message: string) => void = () => {},
+  prefix = "run",
 ): SlideRun | undefined {
-  const get = (k: string): string | undefined => meta.get(`run.${k}`) || undefined;
+  const get = (k: string): string | undefined => meta.get(`${prefix}.${k}`) || undefined;
   const bool = (k: string): boolean | undefined => {
     const v = get(k);
     return v === undefined ? undefined : !["false", "0", "no"].includes(v);
   };
-  if (![...meta.keys()].some((k) => k.startsWith("run."))) return undefined;
+  if (![...meta.keys()].some((k) => k.startsWith(`${prefix}.`))) return undefined;
 
   const run: SlideRun = {};
   const label = get("label");
@@ -147,7 +154,8 @@ export interface SlideMeta {
   title: string;
   body: string;
   sessions: string[];
-  run?: SlideRun;
+  /** Launchable runs, in declaration order. Empty when the slide has none. */
+  runs: SlideRun[];
 }
 
 export function parseSlide(
@@ -162,11 +170,13 @@ export function parseSlide(
     .map((s) => s.trim())
     .filter(Boolean)
     .map(traceFileName);
-  const run = readRun(meta, warn);
+  const runs = [readRun(meta, warn, "run"), readRun(meta, warn, "run2")].filter(
+    (r): r is SlideRun => r !== undefined,
+  );
   return {
     title: heading ? heading.slice(2).trim() : name,
     body,
     sessions,
-    ...(run ? { run } : {}),
+    runs,
   };
 }

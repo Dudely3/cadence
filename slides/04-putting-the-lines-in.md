@@ -38,6 +38,10 @@ last.cache_control = { type: "ephemeral" };
 - Each one caches its own prefix; the longest that still matches is what you
   read back. That is why the older, shorter lines are worth keeping.
 - A block does not need marking to be cached — only to be a *boundary*.
+- **There is a minimum.** A prefix under the model's floor caches nothing at
+  all — no error, just `cache_read_input_tokens: 0` forever. It is 4,096
+  tokens on Haiku 4.5 and 512 on Opus 5, and it is *not* monotonic across
+  generations. `npm run floor` measures any recording against it.
 
 > Cadence never writes `cache_control` by hand. A block sets `cache: true` and
 > the client translates it (`packages/model-anthropic/src/index.ts`), and

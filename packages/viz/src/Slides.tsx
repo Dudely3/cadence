@@ -166,7 +166,7 @@ export function Slides(props: {
   linked: boolean;
   onToggleLink: () => void;
   /** Open the run panel with this slide's run loaded. */
-  onRun: (() => void) | undefined;
+  onRun: ((index: number) => void) | undefined;
 }): React.JSX.Element {
   const total = SLIDES.length;
   const current = SLIDES[Math.min(props.index, Math.max(0, total - 1))];
@@ -229,7 +229,7 @@ export function Slides(props: {
                   bound to it, and whether it can launch a run. */}
               {s.index + 1}. {s.title}
               {s.sessions.length > 0 ? ` · ${s.sessions.length} rec` : ""}
-              {s.run ? " · ▶" : ""}
+              {s.runs.length > 0 ? ` · ${"▶".repeat(s.runs.length)}` : ""}
             </option>
           ))}
         </select>
@@ -244,11 +244,17 @@ export function Slides(props: {
         >
           {props.linked ? "⇄ linked" : "⇄ link"}
         </button>
-        {current.run && props.onRun && (
-          <button className="run-btn run-btn-primary" onClick={props.onRun} title="load this slide's run">
-            ▶ {current.run.label ?? "run this slide"}
-          </button>
-        )}
+        {props.onRun &&
+          current.runs.map((r, i) => (
+            <button
+              key={i}
+              className="run-btn run-btn-primary"
+              onClick={() => props.onRun?.(i)}
+              title="load this run"
+            >
+              ▶ {r.label ?? "run this slide"}
+            </button>
+          ))}
         {unresolved && (
           <span className="chip chip-warning chip-mini" title="a {{placeholder}} had no value in this trace">
             unresolved value

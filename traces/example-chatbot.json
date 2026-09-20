@@ -1,0 +1,139 @@
+{
+  "version": 1,
+  "writtenAt": 1786909800000,
+  "session": {
+    "id": "example-chatbot",
+    "mode": "chatbot",
+    "startedMs": 1786909800000,
+    "presentation": {
+      "hideGoal": true,
+      "resultsAreNextInput": true
+    },
+    "goal": {
+      "id": "shop-support-chat",
+      "description": "Trailhead Supply support chat — no goal object, no observation, no tools; the user drives one message at a time"
+    },
+    "system": "You are the support assistant for Trailhead Supply Co., an online outdoor gear store. Answer questions about products, orders, shipping and returns. Keep answers short and friendly. If you do not know something, say so and offer to hand off to a human.",
+    "tools": [],
+    "turns": [
+      {
+        "index": 0,
+        "closed": true,
+        "cacheable": false,
+        "actions": [],
+        "assistantBlocks": [
+          {
+            "type": "text",
+            "text": "[[assistant greeting]]\nHi! I'm the Trailhead Supply assistant. Ask me about products, orders, shipping or returns."
+          }
+        ],
+        "toolResults": [
+          {
+            "type": "tool_result",
+            "toolUseId": "chat_1_user",
+            "content": "[[user message 1]]\nDo you sell anything for winter camping?"
+          }
+        ],
+        "usage": {
+          "model": "chat-pipeline (append-only conversation)",
+          "inputTokens": 68,
+          "outputTokens": 26,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "timing": { "startedMs": 1786909800000, "durationMs": 800 }
+      },
+      {
+        "index": 1,
+        "closed": true,
+        "cacheable": false,
+        "actions": [],
+        "assistantBlocks": [
+          {
+            "type": "text",
+            "text": "We do. The Camping category has a four-season Alpine Tent 2P and a Down Sleeping Bag rated well below freezing, plus Titanium Tent Stakes that hold in frozen ground. Want me to point you at any of them?"
+          }
+        ],
+        "toolResults": [
+          {
+            "type": "tool_result",
+            "toolUseId": "chat_2_user",
+            "content": "[[user message 2]]\nHow much is the sleeping bag?"
+          }
+        ],
+        "usage": {
+          "model": "chat-pipeline (append-only conversation)",
+          "inputTokens": 118,
+          "outputTokens": 48,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "timing": { "startedMs": 1786909830000, "durationMs": 1100 }
+      },
+      {
+        "index": 2,
+        "closed": true,
+        "cacheable": false,
+        "actions": [],
+        "assistantBlocks": [
+          {
+            "type": "text",
+            "text": "The Down Sleeping Bag is $129.50. It's our warmest bag, and it packs down smaller than the synthetic one."
+          }
+        ],
+        "toolResults": [
+          {
+            "type": "tool_result",
+            "toolUseId": "chat_3_user",
+            "content": "[[user message 3]]\nAnd how long does shipping take to Winnipeg?"
+          }
+        ],
+        "usage": {
+          "model": "chat-pipeline (append-only conversation)",
+          "inputTokens": 186,
+          "outputTokens": 32,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "timing": { "startedMs": 1786909880000, "durationMs": 900 }
+      },
+      {
+        "index": 3,
+        "closed": true,
+        "cacheable": false,
+        "actions": [],
+        "assistantBlocks": [
+          {
+            "type": "text",
+            "text": "Standard shipping to Manitoba is three to five business days. I don't have live carrier times in front of me though — I can hand you to a human if you need a firm date."
+          }
+        ],
+        "toolResults": [],
+        "usage": {
+          "model": "chat-pipeline (append-only conversation)",
+          "inputTokens": 246,
+          "outputTokens": 44,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "timing": { "startedMs": 1786909940000, "durationMs": 950 }
+      }
+    ]
+  },
+  "result": {
+    "success": false,
+    "outcome": "stopped",
+    "steps": 4,
+    "finalObservation": {
+      "summary": "(chat ended — the user closed the tab; a chatbot session has no completion, it just stops)"
+    },
+    "totals": {
+      "wallMs": 143750,
+      "llmCalls": 4,
+      "inputTokens": 618,
+      "outputTokens": 150,
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 0
+    }
+  }
+}
