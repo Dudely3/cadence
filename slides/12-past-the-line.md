@@ -1,11 +1,12 @@
 ---
-sessions: sess_mtyqcsi4_1
+sessions: sess_mtyushk9_2, sess_mtyv3kwm_2
 ---
 
 # Put the volatile stuff past the line
 
-The prefix must be byte-identical to be reused. So anything that changes every
-turn has to live *after* the last breakpoint.
+**That is the move rung 2 just made. Here is the rule it was obeying.** The
+prefix must be byte-identical to be reused, so anything that changes every turn
+has to live *after* the last breakpoint.
 
 - **Before the line:** tools, system prompt, frozen turn history
 - **After the line:** current page state, plan progress, critic feedback

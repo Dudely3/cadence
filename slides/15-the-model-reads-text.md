@@ -4,8 +4,9 @@ sessions: sess_mtyushk9_2, sess_mtyusqcl_3
 
 # The model doesn't care about your markup
 
-**The same product, in the same catalogue, in two recordings bound to this
-slide.** Rung 2 sends the page as the DOM has it:
+**Rung 3 halved the prompt by dropping the markup. This is what it dropped.**
+The same product, in the same catalogue, in two recordings bound to this slide.
+Rung 2 sends the page as the DOM has it:
 
 ```html
 <div class="product"><h3>Camp Stove</h3><p>C

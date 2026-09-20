@@ -32,5 +32,6 @@ not move like that — and on the real page it is the number that decides whethe
 the request can be sent at all.
 
 > `npm run ladder` runs all four on either scenario and writes the traces
-> bound to this slide. The next four slides take one rung each, with both of
-> its recordings already open.
+> bound to this slide. The slides after this take one rung at a time, with both
+> of its recordings already open. Rungs 2 and 3 each earn a detour — where the
+> cache line goes, and what the markup was costing — before rung 4 lands.
