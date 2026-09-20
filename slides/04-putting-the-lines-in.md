@@ -6,9 +6,11 @@ sessions: sess_mtyqcsi4_1
 
 A breakpoint is one property on one block. There is no separate caching API.
 
-The obvious place is the last system block. **It is the wrong one** — and the
-pane shows why: declaring tools makes the API add its own instruction text
-*after* your system prompt, where a line on that block cannot reach it.
+Place a breakpoint at the end of the system prompt so other agents using the 
+same prompt and tools pull from cache— but remember that you can place another 
+one at least one block past the system prompt: declaring tools makes the API 
+add its own instruction text *after* your system prompt, where a line on that 
+block cannot reach it.
 
 ```js
 // the goal message: the last thing in the

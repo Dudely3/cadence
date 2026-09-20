@@ -1003,6 +1003,28 @@ pre,
   border: 0;
   border-top: 1px solid var(--border);
 }
+/* Slide images are logo sheets and screenshots: artwork drawn for a white
+   page, often with a transparent background. On the dark theme that leaves
+   black logos on a near-black pane, so the plate is white in BOTH themes
+   rather than inheriting --surface-1. */
+.sl-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 14px 0;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.sl-img-missing {
+  margin: 14px 0;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--status-critical);
+  border: 1px dashed var(--status-critical);
+  border-radius: 6px;
+}
 .sl-table-wrap {
   overflow-x: auto;
   margin: 12px 0;

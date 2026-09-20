@@ -31,6 +31,38 @@ const files = import.meta.glob("../../../slides/*.md", {
   eager: true,
 }) as Record<string, string>;
 
+/**
+ * Images that live beside the slides, keyed by file name.
+ *
+ * A slide writes `![alt](name.webp)` and means the file next to it — but the
+ * built bundle serves hashed URLs out of `assets/`, so the name in the
+ * markdown is never the name on the wire. Globbing them here lets Vite emit
+ * each one as a real asset and hands back the URL it chose, so the same slide
+ * source works from `npm run viz` and from a built copy on a conference
+ * laptop. Nothing else in this repo reaches into `slides/` for anything but
+ * markdown, which is why the glob is narrow and explicit.
+ */
+const assets = import.meta.glob("../../../slides/*.{png,jpg,jpeg,gif,svg,webp}", {
+  query: "?url",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
+const ASSET_URLS: Record<string, string> = Object.fromEntries(
+  Object.entries(assets).map(([path, url]) => [path.split("/").pop() ?? path, url]),
+);
+
+/**
+ * The served URL for a slide image, or `undefined` if there is no such file.
+ *
+ * Undefined is a real answer the caller has to draw, not a crash: a missing
+ * image should look obviously missing in the pane rather than blanking the
+ * slide. `npm run slides` fails on one long before that.
+ */
+export function slideAssetUrl(src: string): string | undefined {
+  return ASSET_URLS[src.split("/").pop() ?? src];
+}
+
 export const SLIDES: Slide[] = Object.entries(files)
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, raw], index) => {

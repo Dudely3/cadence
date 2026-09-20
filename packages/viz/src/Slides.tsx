@@ -4,6 +4,7 @@ import {
   SLIDES,
   parseMarkdown,
   resolvePlaceholders,
+  slideAssetUrl,
   slideValues,
   type Block,
   type Inline,
@@ -61,6 +62,14 @@ function BlockView(props: { block: Block }): React.JSX.Element | null {
       );
     case "code":
       return <pre className="sl-code">{b.text}</pre>;
+    case "img": {
+      const url = slideAssetUrl(b.src);
+      // Say it out loud rather than rendering a broken-image glyph. The only
+      // way here is a file that was renamed or never committed, and the name
+      // is the one piece of information that makes that fixable.
+      if (url === undefined) return <p className="sl-img-missing">missing image: {b.src}</p>;
+      return <img className="sl-img" src={url} alt={b.alt} />;
+    }
     case "hr":
       return <hr className="sl-hr" />;
     case "table":

@@ -3,8 +3,8 @@
  *
  * Deliberately hand-rolled: this repo ships two runtime dependencies and a
  * slide deck isn't a good reason for a third. Supports what the slides use —
- * headings, bullets, tables, block quotes, rules, fenced code, and inline
- * bold / italic / code.
+ * headings, bullets, tables, block quotes, rules, fenced code, images, and
+ * inline bold / italic / code.
  *
  * Lives apart from slideDeck.ts (which loads the files with
  * `import.meta.glob`, a Vite-only thing) so a terminal can render every slide
@@ -21,6 +21,10 @@ export type Block =
   | { kind: "ul"; items: Inline[][] }
   | { kind: "ol"; items: Inline[][] }
   | { kind: "code"; text: string }
+  // `src` is kept exactly as written. Resolving it to a URL needs
+  // `import.meta.glob`, which only exists inside Vite — so that happens in
+  // slideDeck.ts and this file stays runnable from a terminal.
+  | { kind: "img"; src: string; alt: string }
   | { kind: "table"; head: Inline[][]; rows: Inline[][][] }
   | { kind: "hr" };
 
@@ -82,6 +86,15 @@ export function parseMarkdown(src: string): Block[] {
       continue;
     }
     if (/^---+$/.test(t)) { flush(); out.push({ kind: "hr" }); continue; }
+    // An image only counts as a block when it is the whole line. Inline images
+    // are not supported, and a stray `![…](…)` inside a sentence stays text
+    // rather than silently swallowing the paragraph around it.
+    const img = /^!\[([^\]]*)\]\(([^)\s]+)\)$/.exec(t);
+    if (img) {
+      flush();
+      out.push({ kind: "img", src: img[2] ?? "", alt: img[1] ?? "" });
+      continue;
+    }
     if (t.startsWith("### ")) { flush(); out.push({ kind: "h3", spans: parseInline(t.slice(4)) }); continue; }
     if (t.startsWith("## ")) { flush(); out.push({ kind: "h2", spans: parseInline(t.slice(3)) }); continue; }
     if (t.startsWith("# ")) { flush(); out.push({ kind: "h1", spans: parseInline(t.slice(2)) }); continue; }

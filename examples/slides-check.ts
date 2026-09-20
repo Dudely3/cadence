@@ -120,6 +120,7 @@ const CANARIES: Array<[string, string, (b: ReturnType<typeof parseMarkdown>) => 
   ["bullets", "# t\n\n- one\n- two\n", (b) => b.some((x) => x.kind === "ul")],
   ["numbered list", "# t\n\n1. one\n2. two\n", (b) => b.some((x) => x.kind === "ol")],
   ["block quote", "# t\n\n> quoted\n> more\n", (b) => b.some((x) => x.kind === "quote")],
+  ["image", "# t\n\n![alt](pic.webp)\n", (b) => b.some((x) => x.kind === "img")],
 ];
 for (const [name, src, ok] of CANARIES) {
   try {
@@ -143,6 +144,7 @@ console.log(`checking ${files.length} slides\n`);
 
 let bound = 0;
 let runnable = 0;
+let images = 0;
 
 for (const [i, name] of files.entries()) {
   const raw = fs.readFileSync(path.join(SLIDES_DIR, name), "utf8");
@@ -184,6 +186,24 @@ for (const [i, name] of files.entries()) {
         );
       }
     }
+    // An image is a reference out of the markdown, exactly like a trace name,
+    // and it rots the same way — except the viewer resolves it through a Vite
+    // glob keyed on the file name, so a rename fails as a blank rectangle with
+    // no error in any console.
+    for (const b of blocks) {
+      if (b.kind !== "img") continue;
+      images++;
+      const file = path.join(SLIDES_DIR, b.src);
+      if (!fs.existsSync(file)) {
+        console.log(`      ✕ ${b.src} — NOT IN ${SLIDES_DIR}/`);
+        problems.push(`${name}: image "${b.src}" is not in ${SLIDES_DIR}/`);
+        continue;
+      }
+      // Alt text is not decoration: the pane is a live web page, and this is
+      // the only description of the picture anywhere in the repo.
+      if (b.alt.trim() === "") problems.push(`${name}: image "${b.src}" has no alt text`);
+      console.log(`      ▣ ${b.src} — ${Math.round(fs.statSync(file).size / 1024)} KB`);
+    }
   } catch (err) {
     problems.push(`${name}: the renderer threw — ${(err as Error).message}`);
   }
@@ -224,7 +244,10 @@ if (fs.existsSync(PINS)) {
   }
 }
 
-console.log(`\n${bound} bound recordings · ${runnable} slides can launch a run`);
+console.log(
+  `\n${bound} bound recordings · ${runnable} slides can launch a run` +
+    (images > 0 ? ` · ${images} image(s)` : ""),
+);
 
 if (problems.length > 0) {
   console.error(`\n✕ ${problems.length} problem(s):`);
