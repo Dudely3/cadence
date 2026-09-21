@@ -90,6 +90,27 @@ export function usePaneWidth(
 }
 
 /**
+ * The window's current inner width.
+ *
+ * A pane's maximum has to be a fraction of the room it is in, not a constant:
+ * 900px is a third of a 2560px projector and more than the whole of a 1366px
+ * laptop. Feeding this into `usePaneWidth`'s `max` also re-clamps a remembered
+ * width the moment the window shrinks, which is the same mechanism that
+ * already rescues a width carried over from an external display.
+ */
+export function useWindowWidth(): number {
+  const [width, setWidth] = useState(() =>
+    typeof window === "undefined" ? 1440 : window.innerWidth,
+  );
+  useEffect(() => {
+    const onResize = (): void => setWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  return width;
+}
+
+/**
  * The draggable seam between two panes. Keyboard-operable as well as
  * pointer-operable: it is a control, and on a lectern a trackpad drag is the
  * fiddliest possible way to work one.

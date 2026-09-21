@@ -916,6 +916,14 @@ pre,
   gap: 10px;
   min-width: 0;
   min-height: 0;
+  /* `flex: 1` is inert inside the .split grid and load-bearing outside it:
+     with the anatomy folded away the deck is the only child of .solo, which is
+     a flex column, and without this it would size to its content. */
+  flex: 1;
+  /* The pane is the query container for everything below, so slide type can be
+     sized as a fraction of the pane rather than in fixed pixels. */
+  container-type: inline-size;
+  container-name: slide;
 }
 .slides > .sl-body {
   flex: 1;
@@ -934,53 +942,88 @@ pre,
   flex: 1;
   min-width: 0;
 }
+.sl-zoom {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.sl-zoom-value {
+  min-width: 42px;
+  padding: 2px 4px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+.sl-zoom-value:hover {
+  color: var(--text-primary);
+}
 .sl-body {
   overflow-y: auto;
-  padding: 22px 26px 28px;
+  /* Side padding grows once the type has hit its ceiling and the pane keeps
+     widening, so the leftover room lands as an even margin on both sides
+     instead of one lopsided gutter on the right. Below that width the max()
+     picks the plain padding and nothing moves.
+     70ch would leave the paragraph cap (62ch below) biting a second time and
+     the right gutter visibly deeper than the left, so this matches the widest
+     cap the content uses. */
+  padding: 1.5em max(1.7em, (100% - 64ch) / 2) 1.8em;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-1);
-  /* Readable from a few rows back: larger than UI text, capped line length. */
-  font-size: 15.5px;
+  /* Readable from a few rows back — and the line length below is capped in
+     `ch`, so widening the pane past the cap used to buy nothing but a gutter.
+     Sizing the type off the pane width instead means dragging the seam makes
+     the words BIGGER at a constant measure, which is what a wider pane was
+     wanted for. 2.8cqi is where the cap starts to bite at the old 15.5px, so
+     nothing changes until the gutter would have appeared; the ceiling is where
+     these slides start needing a scroll to finish, which on stage is worse
+     than type one size smaller. Past it, --sl-zoom is a call the presenter
+     makes for the room rather than one made here.
+     Everything below is sized in `em` so it all scales together. */
+  font-size: calc(clamp(15.5px, 2.8cqi, 28px) * var(--sl-zoom, 1));
   line-height: 1.62;
 }
 .sl-body > *:first-child {
   margin-top: 0;
 }
 .sl-h1 {
-  margin: 0 0 4px;
-  font-size: 27px;
+  margin: 0 0 0.15em;
+  font-size: 1.74em;
   line-height: 1.2;
   letter-spacing: -0.01em;
 }
 .sl-h2 {
-  margin: 18px 0 6px;
-  font-size: 19px;
+  margin: 1.15em 0 0.3em;
+  font-size: 1.23em;
   color: var(--text-secondary);
   font-weight: 600;
 }
 .sl-h3 {
-  margin: 16px 0 4px;
-  font-size: 15px;
+  margin: 1.05em 0 0.25em;
+  font-size: 0.97em;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 .sl-p {
-  margin: 9px 0;
+  margin: 0.58em 0;
   max-width: 62ch;
 }
 .sl-ul {
-  margin: 9px 0;
-  padding-left: 20px;
+  margin: 0.58em 0;
+  padding-left: 1.3em;
   max-width: 64ch;
 }
 .sl-ul li {
-  margin: 5px 0;
+  margin: 0.32em 0;
 }
 .sl-quote {
-  margin: 14px 0;
-  padding: 10px 14px;
+  margin: 0.9em 0;
+  padding: 0.65em 0.9em;
   border-left: 3px solid var(--series-1);
   background: var(--cached-tint);
   border-radius: 0 6px 6px 0;
@@ -988,18 +1031,18 @@ pre,
   color: var(--text-secondary);
 }
 .sl-code {
-  margin: 12px 0;
-  padding: 10px 12px;
+  margin: 0.78em 0;
+  padding: 0.65em 0.78em;
   overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--page);
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
-  font-size: 12.5px;
+  font-size: 0.81em;
   line-height: 1.5;
 }
 .sl-hr {
-  margin: 18px 0;
+  margin: 1.15em 0;
   border: 0;
   border-top: 1px solid var(--border);
 }
@@ -1011,37 +1054,37 @@ pre,
   display: block;
   width: 100%;
   height: auto;
-  margin: 14px 0;
-  padding: 12px;
+  margin: 0.9em 0;
+  padding: 0.78em;
   background: #ffffff;
   border: 1px solid var(--border);
   border-radius: 6px;
 }
 .sl-img-missing {
-  margin: 14px 0;
-  padding: 10px 12px;
-  font-size: 13px;
+  margin: 0.9em 0;
+  padding: 0.65em 0.78em;
+  font-size: 0.84em;
   color: var(--status-critical);
   border: 1px dashed var(--status-critical);
   border-radius: 6px;
 }
 .sl-table-wrap {
   overflow-x: auto;
-  margin: 12px 0;
+  margin: 0.78em 0;
 }
 .sl-table {
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 0.9em;
 }
 .sl-table th,
 .sl-table td {
-  padding: 6px 12px;
+  padding: 0.43em 0.86em;
   border-bottom: 1px solid var(--border);
   text-align: left;
   vertical-align: top;
 }
 .sl-table th {
-  font-size: 11px;
+  font-size: 0.79em;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-muted);

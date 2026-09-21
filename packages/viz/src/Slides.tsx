@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@cadence/core";
 import {
   SLIDES,
@@ -159,6 +159,48 @@ function SessionStrip(props: {
   );
 }
 
+/**
+ * Slide type scales with the pane on its own (see `.sl-body`), but only up to
+ * the size where these slides stop fitting on one screen. Past that it is a
+ * judgement about the room — how far back the last row is, how much of the
+ * slide the presenter is willing to scroll — so it is a control, not a
+ * constant. Remembered, because it is set once per venue.
+ */
+const ZOOM_KEY = "cadence.slideZoom";
+const ZOOM_MIN = 0.7;
+const ZOOM_MAX = 2.2;
+
+function useSlideZoom(): [number, (step: number) => void, () => void] {
+  const [zoom, setZoom] = useState(() => {
+    try {
+      const n = Number(localStorage.getItem(ZOOM_KEY));
+      return Number.isFinite(n) && n > 0 ? Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, n)) : 1;
+    } catch {
+      // Blocked site data must not take the deck down; the default is fine.
+      return 1;
+    }
+  });
+  const apply = useCallback((next: number) => {
+    const clamped = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(next * 10) / 10));
+    setZoom(clamped);
+    try {
+      localStorage.setItem(ZOOM_KEY, String(clamped));
+    } catch {
+      /* nothing to do — it just won't be remembered */
+    }
+  }, []);
+  const bump = useCallback((step: number) => setZoom((z) => {
+    const clamped = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round((z + step) * 10) / 10));
+    try {
+      localStorage.setItem(ZOOM_KEY, String(clamped));
+    } catch {
+      /* as above */
+    }
+    return clamped;
+  }), []);
+  return [zoom, bump, () => apply(1)];
+}
+
 export function Slides(props: {
   index: number;
   onIndex: (i: number) => void;
@@ -179,6 +221,7 @@ export function Slides(props: {
 }): React.JSX.Element {
   const total = SLIDES.length;
   const current = SLIDES[Math.min(props.index, Math.max(0, total - 1))];
+  const [zoom, bumpZoom, resetZoom] = useSlideZoom();
 
   // ←/→ move between slides while this panel is open.
   useEffect(() => {
@@ -208,7 +251,7 @@ export function Slides(props: {
   const unresolved = /\{\{\w+\}\}/.test(resolvePlaceholders(current.body, values));
 
   return (
-    <div className="slides">
+    <div className="slides" style={{ "--sl-zoom": zoom } as React.CSSProperties}>
       <div className="sl-bar">
         <button
           className="run-btn"
@@ -264,6 +307,33 @@ export function Slides(props: {
               ▶ {r.label ?? "run this slide"}
             </button>
           ))}
+        {/* Type size for the room. The pane width already sets a sensible
+            size; this is the presenter overruling it for the back row. */}
+        <span className="sl-zoom">
+          <button
+            className="run-btn"
+            onClick={() => bumpZoom(-0.1)}
+            disabled={zoom <= ZOOM_MIN}
+            title="smaller slide text"
+          >
+            A−
+          </button>
+          <button
+            className="sl-zoom-value"
+            onClick={resetZoom}
+            title="slide text size — click to reset to the size this pane width suggests"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <button
+            className="run-btn"
+            onClick={() => bumpZoom(0.1)}
+            disabled={zoom >= ZOOM_MAX}
+            title="bigger slide text"
+          >
+            A+
+          </button>
+        </span>
         {unresolved && (
           <span className="chip chip-warning chip-mini" title="a {{placeholder}} had no value in this trace">
             unresolved value

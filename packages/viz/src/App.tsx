@@ -8,7 +8,7 @@ import { RunPanel } from "./RunPanel";
 import { Slides } from "./Slides";
 import { SLIDES, slidesForTrace } from "./slideDeck";
 import { usePins } from "./pins";
-import { Grip, usePaneWidth } from "./resize";
+import { Grip, usePaneWidth, useWindowWidth } from "./resize";
 
 /** Run-state chip: icon + label always — never color alone. */
 function OutcomeChip(props: {
@@ -96,6 +96,11 @@ export function App(): React.JSX.Element {
   // alone; slide 1 names the recording it wants beside it, so the page can
   // open on a slide and its evidence together. `d` still toggles it away.
   const [showSlides, setShowSlides] = useState(true);
+  // The anatomy is the point of the viewer, so it is up by default — but not
+  // every slide has a request worth pointing at, and on those the pane is a
+  // third of the screen spent on a picture nobody is looking at. Folding it
+  // away is what lets the deck have the whole window.
+  const [showAnatomy, setShowAnatomy] = useState(true);
   const [slide, setSlide] = useState(0);
   // Moving between slides moves the viewer to that slide's recording. On by
   // default — it is the reason the binding exists — but a toggle, because
@@ -103,15 +108,29 @@ export function App(): React.JSX.Element {
   const [linked, setLinked] = useState(true);
   const { pins, refresh: refreshPins, unpin } = usePins();
 
-  // Draggable widths for the side panels; the anatomy pane takes the rest.
+  // Folding the anatomy away only makes sense while something else is up. With
+  // every panel closed there would be nothing left to look at, so the last
+  // pane standing is not foldable.
+  const anatomyOpen = showAnatomy || (!showSlides && !showRun);
+
+  // Draggable widths for the side panels; the last open pane takes the rest.
   // Minimums are hard: with three panels up on a 1280px screen the floors sum
   // to 900px, so nothing can be dragged to nothing and lost mid-talk.
+  //
+  // The MAXIMUM is not a constant, because "too wide" depends on what is
+  // beside it. With the anatomy folded away the deck may take nearly the whole
+  // window; with it open the drag stops while the anatomy can still be read.
   //
   // Declared HERE, with the other hooks, and not next to the layout they
   // describe: there is an early return further down for "no trace yet", and a
   // hook after it runs on some renders and not others.
-  const slidesPane = usePaneWidth("slides", 460, 280, 900);
-  const runPane = usePaneWidth("run", 420, 280, 900);
+  const windowWidth = useWindowWidth();
+  const sideMax = Math.max(
+    560,
+    windowWidth - (showRun ? 300 : 0) - (anatomyOpen ? 360 : 0) - 48,
+  );
+  const slidesPane = usePaneWidth("slides", 460, 280, sideMax);
+  const runPane = usePaneWidth("run", 420, 280, sideMax);
   const turnsPane = usePaneWidth("turns", 240, 120, 420);
 
   // The listing carries only file stats; fold in each session's summary so the
@@ -320,10 +339,14 @@ export function App(): React.JSX.Element {
       if (e.key === "s") setShowSessions((v) => !v);
       else if (e.key === "r") setShowRun((v) => !v);
       else if (e.key === "d") setShowSlides((v) => !v);
+      else if (e.key === "a") setShowAnatomy((v) => !v);
       else if (e.key === "Escape") {
         setShowSessions(false);
         setShowRun(false);
         setShowSlides(false);
+        // Escape is "give me the viewer back", and a viewer with the anatomy
+        // folded away is not it.
+        setShowAnatomy(true);
       } else if (e.key === "ArrowUp") pick(Math.max(0, selected - 1));
       else if (e.key === "ArrowDown") pick(Math.min(latest, selected + 1));
       else if (showSessions || showRun || showSlides) return; // a panel owns ←/→, v, and f
@@ -359,7 +382,9 @@ export function App(): React.JSX.Element {
   const panelOpen = showRun || showSessions || showSlides;
   // Slides, run controls and anatomy can all be up at once — three columns is
   // tight but it is the layout that never needs a terminal or a second window.
-  const panes = 1 + (showSlides ? 1 : 0) + (showRun ? 1 : 0);
+  // Any of them can also be the only one, which is how the deck gets the whole
+  // screen.
+  const panes = (showSlides ? 1 : 0) + (showRun ? 1 : 0) + (anatomyOpen ? 1 : 0);
 
   // Widths go out as CUSTOM PROPERTIES, not as a grid-template-columns
   // string. An inline template would beat the narrow-screen media queries that
@@ -367,10 +392,15 @@ export function App(): React.JSX.Element {
   // the layout would stay in three unreadable columns on a small display.
   // Sized panes are named in order, so the CSS doesn't need to know which
   // panels are open, only how many.
+  //
+  // Every pane but the LAST one is sized; the last takes the remainder. That
+  // is why this drops the final entry rather than naming the anatomy: with the
+  // anatomy folded away the run panel becomes the pane that absorbs the slack.
   const sidePanes = [
     ...(showSlides ? [slidesPane.width] : []),
     ...(showRun ? [runPane.width] : []),
-  ];
+    ...(anatomyOpen ? [0] : []),
+  ].slice(0, -1);
   const splitVars = {
     "--pane-a": `${sidePanes[0] ?? 0}px`,
     "--pane-b": `${sidePanes[1] ?? 0}px`,
@@ -467,6 +497,22 @@ export function App(): React.JSX.Element {
         >
           {view === "anatomy" ? "▦ blocks" : "☰ anatomy"}
         </button>
+        {/* Disabled rather than hidden when it is the only pane left: a control
+            that vanishes is one the presenter has to go looking for again. */}
+        <button
+          className={`follow${anatomyOpen ? " follow-on" : ""}`}
+          onClick={() => setShowAnatomy((v) => !v)}
+          disabled={!showSlides && !showRun}
+          title={
+            !showSlides && !showRun
+              ? "nothing else is open to show instead"
+              : anatomyOpen
+                ? "hide the request panes and give the rest of the window to the panels (a)"
+                : "show the request panes again (a)"
+          }
+        >
+          {anatomyOpen ? "◨ hide anatomy" : "◧ show anatomy"}
+        </button>
         <OutcomeChip
           {...(envelope.result ? { outcome: envelope.result.outcome } : {})}
           running={running}
@@ -519,7 +565,9 @@ export function App(): React.JSX.Element {
               }
             />
           )}
-          {showSlides && (
+          {/* A seam only where there is something on the other side of it: with
+              the anatomy folded away the deck's right edge is the window. */}
+          {showSlides && (showRun || anatomyOpen) && (
             <Grip label="slides" onDrag={slidesPane.onDrag} onReset={slidesPane.reset} />
           )}
           {/* Run controls sit BESIDE the anatomy, not instead of it: the point
@@ -542,9 +590,12 @@ export function App(): React.JSX.Element {
               }}
             />
           )}
-          {showRun && <Grip label="run panel" onDrag={runPane.onDrag} onReset={runPane.reset} />}
+          {showRun && anatomyOpen && (
+            <Grip label="run panel" onDrag={runPane.onDrag} onReset={runPane.reset} />
+          )}
           {/* One grid child per column: everything on the anatomy side lives in
               this pane, or auto-placement scatters it across the split. */}
+          {anatomyOpen && (
           <div className="main-pane">
           {turns.length === 0 && (
             <p className="hint empty-trace">
@@ -678,6 +729,7 @@ export function App(): React.JSX.Element {
       </div>
           )}
           </div>
+          )}
         </div>
       )}
 

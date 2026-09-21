@@ -218,9 +218,23 @@ moved 150px of height into the block stack, which in the three-pane split had on
 once for the projector and it stays set. Drag the thin line between panes, or focus it and
 use ←/→ (Shift for bigger steps); double-click or press Home to reset that one. Hard floors
 stop anything vanishing: side panels can't go below 280px, the anatomy pane never below
-320px however far you drag, and the requests column stays between 120 and 420. Under
-1100px wide the panes stack into rows and the seams disappear, because a vertical seam
-means nothing when the panes are stacked.
+320px however far you drag, and the requests column stays between 120 and 420. How far a
+side panel can be dragged the *other* way depends on the window and on what is open beside
+it, not on a fixed number — with the anatomy folded away a panel can have nearly the whole
+screen. Under 1100px wide the panes stack into rows and the seams disappear, because a
+vertical seam means nothing when the panes are stacked.
+
+Not every slide has a request worth pointing at. **◨ hide anatomy** (or **a**) folds the
+request panes away and hands the rest of the window to whatever is still open — usually the
+deck, on its own, full screen. The button greys out when nothing else is up, and Escape
+brings the anatomy back with the rest of the panels.
+
+**Slide type sizes itself to the pane.** Widening the deck used to buy nothing past the
+line-length cap but a gutter; now it scales the words instead, at a constant measure, up to
+the size where these slides stop fitting on one screen. Past that it is a call about the
+room rather than about the layout, so **A− / A+** in the slide bar take it further — click
+the percentage to go back to the size the pane width suggests. That setting is remembered
+too; the fold is not, so a reload always opens on the whole viewer.
 
 The anatomy pane **follows** the newest turn while a run is going — the ⤓ button in the
 header (or **f**) toggles that, and clicking any turn in the list pins it. Follow re-arms
