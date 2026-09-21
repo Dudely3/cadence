@@ -91,6 +91,16 @@ export function App(): React.JSX.Element {
   // Which of the slide’s runs the panel is presetting — a rung slide offers the
   // local shop page and the real site, and the button you pressed decides.
   const [runIndex, setRunIndex] = useState(0);
+  // Whether a preset was chosen DELIBERATELY, by pressing ▶ on a slide.
+  //
+  // Hiding the deck used to unload the preset, because the panel was armed by
+  // whichever slide happened to be visible. That is right for passive arming
+  // and wrong the moment you have picked a run: press ▶ on rung 1's
+  // prairiedevcon run, press `d` to give the run panel the screen, and the
+  // panel quietly fell back to the plain ad-hoc form — so `start` ran
+  // examples/browse.ts against the local shop page instead. A hidden panel is
+  // a view change, not a change of mind.
+  const [presetHeld, setPresetHeld] = useState(false);
   // The deck is up from the first paint. Opening on a bare anatomy pane asks a
   // first-time reader to work out what they are looking at from the picture
   // alone; slide 1 names the recording it wants beside it, so the page can
@@ -107,6 +117,13 @@ export function App(): React.JSX.Element {
   // scrubbing back through slides mid-demo shouldn't yank the trace away.
   const [linked, setLinked] = useState(true);
   const { pins, refresh: refreshPins, unpin } = usePins();
+
+  // Closing the run panel is how you say you are done with that run, so the
+  // hold ends there rather than when the deck reappears. Every path that
+  // closes the panel — the button, `r`, Escape — goes through this.
+  useEffect(() => {
+    if (!showRun) setPresetHeld(false);
+  }, [showRun]);
 
   // Folding the anatomy away only makes sense while something else is up. With
   // every panel closed there would be nothing left to look at, so the last
@@ -238,6 +255,10 @@ export function App(): React.JSX.Element {
 
   // --- the slide the deck is on, and the recordings it is about ------------
   const slideDef = SLIDES[Math.min(slide, Math.max(0, SLIDES.length - 1))];
+  // The deck being VISIBLE arms the panel passively; a held preset keeps it
+  // armed once the deck is folded away. Either way it is the slide the deck is
+  // parked on, so stepping to another slide still re-arms.
+  const presetting = showSlides || presetHeld;
   const slideSessions = useMemo(() => {
     const authored = slideDef?.sessions ?? [];
     const live = (slideDef ? pins[slideDef.name] : undefined) ?? [];
@@ -560,6 +581,7 @@ export function App(): React.JSX.Element {
                   ? (i) => {
                       setRunIndex(i);
                       setShowRun(true);
+                      setPresetHeld(true);
                     }
                   : undefined
               }
@@ -577,9 +599,9 @@ export function App(): React.JSX.Element {
               // The preset follows the visible slide, so "run" on the slide
               // about rung 3 runs rung 3 — and nothing at all when the deck
               // is closed, which is the plain panel it has always been.
-              preset={showSlides ? slideDef?.runs[runIndex] : undefined}
-              presetKey={showSlides ? slideDef?.name : undefined}
-              presetTitle={showSlides ? slideDef?.title : undefined}
+              preset={presetting ? slideDef?.runs[runIndex] : undefined}
+              presetKey={presetting ? slideDef?.name : undefined}
+              presetTitle={presetting ? slideDef?.title : undefined}
               // The server pins a run's recordings to the slide it was
               // launched from; this just picks the new file up.
               onTraces={() => void refreshPins()}
