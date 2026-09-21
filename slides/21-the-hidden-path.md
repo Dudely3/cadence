@@ -10,22 +10,21 @@ run.note: one speed run on the ordering trap — a cent or two, and it fails sev
 
 # The one construction can't prevent
 
-Same ten items, one clause added: **then leave the cart holding only the
-cheapest Climbing item.** The page has no per-item remove — only *Clear cart* —
-so the ten-item total has to be read **before** the step that destroys it.
-Afterwards the state block faithfully reports `$14.25`, and it is far too late.
+That was row 2: same ten items, one clause added — **then leave the cart
+holding only the cheapest Climbing item.** The page has no per-item remove,
+only *Clear cart*, so the ten-item total has to be read **before** the step
+that destroys it.
 
-| | runs | read the total in time | converged |
-| --- | --- | --- | --- |
-| speed | 8 | **8** | **1** |
-| accuracy | 3 | **3** | **3** |
+All eleven runs read it in time. **What split the modes was converging at
+all.**
 
-**The stale-number trap caught nobody. Again.** All eleven runs read $685.08
-off the cart before anything cleared it — construction had already won that
-argument, for the second goal running.
+| | runs | converged |
+| --- | --- | --- |
+| speed | 8 | **1** |
+| accuracy | 3 | **3** |
 
-**What split the modes was converging at all.** Being right here is a property
-of *order*, and the order is not in the request. It has to be decided.
+Being right here is a property of *order*, and the order is not in the request.
+It has to be decided.
 
 - `sess_mu2oeodd_2` spent twenty turns hunting a per-item remove control that
   does not exist, ending on three identical `find_in_page` calls.

@@ -1,5 +1,5 @@
 ---
-sessions: sess_mtes6cyx_1, sess_mtyqcsi4_1
+sessions: sess_mtes6cyx_1, sess_mtyqcsi4_1, sess_mtwyspf3_1, sess_mtwynn45_2
 run.label: run accuracy mode live
 run.mode: accuracy
 run.step: true
@@ -34,11 +34,26 @@ talk is about whether your risk is the kind that pays for it.
 | critic (one per closed turn) | 2 |
 | **total** | **6** |
 
-Three turns of work, six model calls. Against the speed run of the same task,
-also bound to this slide, that is **14× the cost** — $0.0943 against $0.0068.
-The requests column shows where it goes, call by call, and the next slide puts
-all three modes side by side.
+**Three turns of work, six model calls.** Speed would have made three. The
+next slide prices that; this slide is where the calls come from.
 
-> Note which bullet did the work when this mode finally won. It was the
-> **planner**, not the critic — decomposition bought before turn 0, not a
-> second opinion bought after every one.
+## The bill is unpredictable, not merely high
+
+Six accuracy runs of one goal — add ten items, report the cart's total:
+
+| how it clicked | turns | calls | cost |
+| --- | --- | --- | --- |
+| batched them (4 runs) | 3–4 | 6–8 | $0.147 – $0.188 |
+| one at a time (2 runs) | 12 | 24 | $0.379 – $0.387 |
+
+Nothing in the goal, the page or the harness chooses that. **A per-turn critic
+multiplies whatever turn count the model happens to pick** — so a 2.6× spread
+on an identical task is the mode working as designed. Speed took two turns
+every time.
+
+> And the step cap is a cliff, not a net. `maxSteps` was 12 — one turn above
+> this task's floor — so both one-at-a-time runs ended at the cap with a full
+> cart and no answer. That measured my configuration, not the mode. It is 18
+> now.
+>
+> **Budget for accuracy's variance, not its average.**

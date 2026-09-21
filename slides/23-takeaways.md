@@ -21,6 +21,9 @@ that makes that first paragraph true.
   agent turn is two, so a breakpoint set once dies after ten turns. Below the
   model's minimum cacheable prefix nothing caches at all — and good context
   construction walks straight into it.
+- **The model reads the shape, not just the text.** Handed history frozen and
+  state volatile, Haiku wrote its own ledger into assistant text and stopped
+  re-opening the page. Build the prompt well and the model will use it.
 
 ## The model reads text
 

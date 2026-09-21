@@ -29,10 +29,9 @@ Same loop, same tools, same page, same operating guide — one run of
 bound to this slide: open either and every number above is inside it.
 
 - **Speed** is the default, because most steps are not hard.
-- **Accuracy** adds a planner call before turn 0 and a critic call after each
-  closed turn. Here that is 2 extra calls for zero extra correctness.
+- **Accuracy** spent 2 extra calls here for zero extra correctness.
 - **Replay** re-executes the speed run's trace. No model, no tokens, and it put
   the same thing in the cart.
 
-> Which is a strange advertisement for a talk called Speed vs. Accuracy, so the
-> honest question is the next slide: what *does* the extra money buy?
+> Which is a strange advertisement for a talk called Speed vs. Accuracy. So I
+> built five traps to catch the cheap mode out.
