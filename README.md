@@ -1,5 +1,12 @@
 # Cadence
 
+```bash
+npm install
+npm run viz
+```
+
+Open http://localhost:5173. No API key needed.
+
 A minimal, domain-agnostic harness for agentic AI loops — the framework behind the talk
 **"Speed vs. Accuracy: Execution Modes for Agentic Workflows."**
 
